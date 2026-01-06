@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { UI_TEXT } from "../ui/textFormat";
+import { UI_TEXT } from "../../Components/ItemUi/textFormat";
 import { THEME } from "../styles/theme";
-import FieldBlock from "../ui/FieldBlock";
+import FieldBlock from "../../Components/ItemUi/FieldBlock";
 import { CURRENT_USER, MOCK_ITEMS } from "../mock/mockItems";
 
 const CATEGORY_OPTIONS = [
