@@ -6,11 +6,17 @@ import Login from './pages/Login/Login';
 import ForgotPassword from './pages/ForgotPassword/ForgotPassword';
 import ResetPassword from './pages/ResetPassword/ResetPassword';
 import Home from './pages/Home/Home';
+<<<<<<< HEAD
 import AddItemPage from "./pages/Item/AddItemPage";
 import RecentLostItemsPage from "./pages/Item/RecentLostItemsPage";
 import EditItemPage from "./pages/Item/EditItemPage";
 import ChatPage from "./pages/Item/ChatPage";
 
+=======
+import Terms from './pages/Terms/Terms'
+import VerifyEmail from './pages/VerifyEmail/VerifyEmail'
+import Profile from './pages/Profile/Profile'
+>>>>>>> bf8312ad0950a30b9363629d7c9416bf30bb8edf
 function App() {
   return (
     <HashRouter>
@@ -22,6 +28,9 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/terms" element={<Terms />} />
+      <Route path="/verify-email" element={<VerifyEmail />} />
+      <Route path="/profile" element={<Profile />} />
     </Routes>
     </HashRouter>
   )
