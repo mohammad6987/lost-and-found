@@ -1,6 +1,6 @@
 import React from "react";
 import { UI_TEXT } from "./textFormat";
-import { THEME } from "../styles/theme";
+import { THEME } from "../../pages/Item/itemTheme";
 
 export default function Modal({ title, onClose, children }) {
   return (

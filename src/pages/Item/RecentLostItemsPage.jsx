@@ -4,7 +4,7 @@ import { UI_TEXT } from "../../Components/ItemUi/textFormat";
 import { THEME } from "./itemTheme";
 import Modal from "../../Components/ItemUi/Modal";
 import PreviewLine from "../../Components/ItemUi/PreviewLine";
-import { CURRENT_USER, MOCK_ITEMS } from "../mock/mockItems";
+import { CURRENT_USER, MOCK_ITEMS } from "../../mock/mockItems";
 
 const CATEGORY_LABELS = {
   phones: "موبایل",

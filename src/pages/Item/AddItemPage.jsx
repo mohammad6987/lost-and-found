@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { UI_TEXT } from "../../Components/ItemUi/textFormat";
-import { THEME } from "../../Components/ItemUi/Modal/theme";
+import { THEME } from "./itemTheme";
 import FieldBlock from "../../Components/ItemUi/FieldBlock";
 import PreviewLine from "../../Components/ItemUi/PreviewLine";
 
