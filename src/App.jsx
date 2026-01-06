@@ -18,6 +18,9 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/terms" element={<Terms />} />
+      <Route path="/verify-email" element={<VerifyEmail />} />
+      <Route path="/profile" element={<Profile />} />
     </Routes>
     </HashRouter>
   )

@@ -13,6 +13,43 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "../assets/Map.css";
 
+
+
+
+const STATIC_ITEMS = [
+  // Cluster 1
+  ...Array.from({ length: 10 }).map((_, i) => ({
+    id: `static-a-${i}`,
+    name: `Phone ${i + 1}`,
+    category: "electronics",
+    timestamp: new Date().toISOString(),
+    x: 35.703 + i * 0.0002,
+    y: 51.352 + i * 0.0002,
+  })),
+
+  // Cluster 2
+  ...Array.from({ length: 10 }).map((_, i) => ({
+    id: `static-b-${i}`,
+    name: `Document ${i + 1}`,
+    category: "documents",
+    timestamp: new Date().toISOString(),
+    x: 35.7005 + i * 0.00015,
+    y: 51.3495 + i * 0.00015,
+  })),
+
+  // Scattered
+  ...Array.from({ length: 10 }).map((_, i) => ({
+    id: `static-c-${i}`,
+    name: `Item ${i + 1}`,
+    category: "other",
+    timestamp: new Date().toISOString(),
+    x: 35.698 + Math.random() * 0.01,
+    y: 51.347 + Math.random() * 0.01,
+  })),
+];
+
+
+
 /* ================== config ================== */
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 const TILE_URL = import.meta.env.VITE_MAP_TILE_URL;
@@ -145,7 +182,8 @@ export default function LostAndFoundMap() {
 
   const categories = ["electronics", "documents", "clothing", "other"];
 
-  const [items, setItems] = useState([]);
+  //const [items, setItems] = useState([]);
+  const [items, setItems] = useState(STATIC_ITEMS);
   const [selectedId, setSelectedId] = useState(null);
   const [selectedCategories, setSelectedCategories] =
     useState(categories);
