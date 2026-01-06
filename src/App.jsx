@@ -6,7 +6,9 @@ import Login from './pages/Login/Login';
 import ForgotPassword from './pages/ForgotPassword/ForgotPassword';
 import ResetPassword from './pages/ResetPassword/ResetPassword';
 import Home from './pages/Home/Home';
-
+import Terms from './pages/Terms/Terms'
+import VerifyEmail from './pages/VerifyEmail/VerifyEmail'
+import Profile from './pages/Profile/Profile'
 function App() {
   return (
     <HashRouter>
