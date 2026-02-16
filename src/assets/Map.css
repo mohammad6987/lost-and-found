@@ -3,127 +3,169 @@
 .app-container {
   display: flex;
   height: 100vh;
-  background: #f4f6f8;
-  font-family: "Inter", system-ui, sans-serif;
+  background: radial-gradient(circle at top, #f7f9fc, #eef2f6 45%, #e6edf5 100%);
+  font-family: "Vazirmatn", "Inter", system-ui, sans-serif;
+  gap: 12px;
+  padding: 12px;
 }
 
 .map-wrapper {
   flex: 1;
-  border-radius: 12px;
+  position: relative;
+  border-radius: 18px;
   overflow: hidden;
-  margin: 12px;
+  background: #ffffff;
+  box-shadow:
+    0 18px 50px rgba(15, 23, 42, 0.12),
+    inset 0 0 0 1px rgba(226, 232, 240, 0.9);
+  min-height: 0;
+}
+
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+}
+
+.map-toolbar {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  pointer-events: none;
+  z-index: 500;
+}
+
+.map-title {
+  background: rgba(17, 24, 39, 0.85);
+  color: #f8fafc;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.2);
+}
+
+.map-hint {
+  background: rgba(255, 255, 255, 0.9);
+  color: #334155;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.12);
 }
 
 /* ---------- sidebar ---------- */
 
 .sidebar {
-  width: 280px;
-  background: white;
-  padding: 16px;
-  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.08);
+  width: 320px;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 18px;
+  border-radius: 18px;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
   overflow-y: auto;
 }
 
 .sidebar h3 {
-  margin-bottom: 12px;
+  margin: 0 0 12px;
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 700;
+  color: #0f172a;
 }
 
-/* ---------- item cards ---------- */
+.filter-section {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.filter-section strong {
+  font-size: 13px;
+  color: #475569;
+}
+
+.filter-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #334155;
+  cursor: pointer;
+}
+
+.filter-label input {
+  accent-color: #2563eb;
+}
+
 /* ---------- sidebar item card ---------- */
 
 .item-card {
   position: relative;
   background: white;
-  border-radius: 12px;
-  padding: 12px 16px;
+  border-radius: 14px;
+  padding: 12px 16px 14px;
   margin-bottom: 12px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
   display: flex;
   flex-direction: column;
+  gap: 4px;
 }
 
 .item-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);
 }
 
 .item-card.active {
-  border-left: 4px solid #3b82f6;
+  border-left: 4px solid #2563eb;
 }
-
-/* ---------- item name ---------- */
 
 .item-name {
-  font-weight: 600;
-  font-size: 16px;
-  margin-bottom: 6px;
-  color: #111827;
+  font-weight: 700;
+  font-size: 15px;
+  color: #0f172a;
 }
-
-
-/* ---------- timestamp ---------- */
-
 
 .item-timestamp {
-  font-size: 13px;
-  color: #6b7280;
+  font-size: 12px;
+  color: #64748b;
 }
-
-/* ---------- category badge ---------- */
 
 .badge {
   position: absolute;
   top: 12px;
   right: 12px;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 700;
   padding: 2px 8px;
   border-radius: 999px;
   color: white;
   text-transform: capitalize;
 }
 
-/* category colors */
 .badge.electronics { background: #2563eb; }
 .badge.documents   { background: #16a34a; }
 .badge.clothing    { background: #db2777; }
 .badge.other       { background: #f59e0b; }
 
-/* ---------- marker dots ---------- */
+/* ---------- markers ---------- */
 
-.marker-dot {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.8);
-}
-
-/* categories */
-
-.electronics {
-  background: #2563eb;
-}
-
-.documents {
-  background: #16a34a;
-}
-
-.clothing {
-  background: #db2777;
-}
-
-.other {
-  background: #f59e0b;
-}
 .custom-marker {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  border: 2px solid white;
+  border: 2px solid #ffffff;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.35);
 }
 
 .marker-electronics { background: #2563eb; }
@@ -131,46 +173,19 @@
 .marker-clothing    { background: #db2777; }
 .marker-other       { background: #f59e0b; }
 
-
-/* Marker categories */
-.custom-marker {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  border: 2px solid white;
-}
-
-.marker-electronics { background: #2563eb; }
-.marker-documents   { background: #16a34a; }
-.marker-clothing    { background: #db2777; }
-.marker-other       { background: #f59e0b; }
-
-/* Marker categories */
-.custom-marker {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  border: 2px solid white;
-}
-
-.marker-electronics { background: #2563eb; }
-.marker-documents   { background: #16a34a; }
-.marker-clothing    { background: #db2777; }
-.marker-other       { background: #f59e0b; }
-
-/* Cluster styling */
 .my-custom-cluster {
   position: relative;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.95);
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid #3b82f6;
-  font-weight: bold;
-  color: #111;
+  border: 2px solid rgba(37, 99, 235, 0.6);
+  font-weight: 700;
+  color: #0f172a;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.2);
 }
 
 .cluster-dot {
@@ -189,17 +204,42 @@
 
 .cluster-count {
   position: absolute;
-  bottom: -4px;
-  right: -4px;
+  bottom: -6px;
+  right: -6px;
   font-size: 10px;
-  background: #3b82f6;
+  background: #2563eb;
   color: white;
   border-radius: 50%;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.4);
+}
+
+/* ---------- leaflet tweaks ---------- */
+
+.leaflet-control-zoom a {
+  background: #ffffff;
+  color: #1f2937;
+  border: none;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.12);
+}
+
+.leaflet-control-zoom a:hover {
+  background: #f1f5f9;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.18);
+}
+
+.leaflet-popup-content {
+  margin: 12px 14px;
+  font-size: 13px;
+  color: #1f2937;
 }
 
 .simple-error {
@@ -210,3 +250,49 @@
   font-size: 14px;
 }
 
+/* ---------- responsive ---------- */
+
+@media (max-width: 1000px) {
+  .app-container {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    max-height: 40vh;
+  }
+
+  .map-wrapper {
+    min-height: 50vh;
+  }
+}
+
+@media (max-width: 600px) {
+  .app-container {
+    padding: 8px;
+    gap: 10px;
+  }
+
+  .sidebar {
+    padding: 14px;
+    max-height: 45vh;
+  }
+
+  .map-wrapper {
+    min-height: 48vh;
+  }
+
+  .map-toolbar {
+    left: 12px;
+    right: 12px;
+    top: 12px;
+  }
+
+  .map-title {
+    font-size: 12px;
+  }
+
+  .map-hint {
+    font-size: 11px;
+  }
+}

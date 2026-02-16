@@ -5,6 +5,7 @@ import { THEME } from "./itemTheme";
 import Modal from "../../Components/ItemUi/Modal";
 import PreviewLine from "../../Components/ItemUi/PreviewLine";
 import { CURRENT_USER, MOCK_ITEMS } from "../../mock/mockItems";
+import "./ItemPages.css";
 
 const CATEGORY_LABELS = {
   phones: "موبایل",
@@ -72,8 +73,12 @@ export default function RecentLostItemsPage() {
   }
 
   return (
-    <div {...UI_TEXT.page} style={{ ...UI_TEXT.page.style, color: THEME.text }}>
-      <div className="py-4 px-3">
+    <div
+      {...UI_TEXT.page}
+      className="item-page item-page--list"
+      style={{ ...UI_TEXT.page.style, color: THEME.text }}
+    >
+      <div className="py-4 px-3 item-page__content">
         <div className="mx-auto" style={{ width: "100%", maxWidth: 900 }}>
           <header className="text-center mb-4">
             <h1 className="h3 mb-2">اشیای گمشده اخیر</h1>

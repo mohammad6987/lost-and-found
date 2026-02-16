@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { isAuthenticated, getUserData, clearAuth } from "../../services/auth";
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 import "./Home.css";
 
 // Mock data - TODO: Replace with actual API call when backend is ready
@@ -104,101 +104,13 @@ function SkeletonCard() {
   );
 }
 
-/* ========== User Menu Component ========== */
-function UserMenu({ user, onLogout }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const menuRef = useRef(null);
-
-  // Close menu when clicking outside
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  // Close menu on escape key
-  useEffect(() => {
-    function handleEscape(event) {
-      if (event.key === "Escape") {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener("keydown", handleEscape);
-    return () => document.removeEventListener("keydown", handleEscape);
-  }, []);
-
-  return (
-    <div className="user-menu" ref={menuRef}>
-      <button
-        className="user-menu-trigger"
-        onClick={() => setIsOpen(!isOpen)}
-        aria-expanded={isOpen}
-        aria-haspopup="true"
-      >
-        <span className="user-avatar">👤</span>
-        <span className="user-name">{user?.email?.split("@")[0] || "کاربر"}</span>
-        <span className={`dropdown-arrow ${isOpen ? "open" : ""}`}>▼</span>
-      </button>
-      
-      {isOpen && (
-        <div className="user-dropdown" role="menu">
-          <div className="dropdown-header">
-            <span className="dropdown-email">{user?.email || "کاربر"}</span>
-          </div>
-          <div className="dropdown-divider" />
-          <Link 
-            to="/profile" 
-            className="dropdown-item"
-            role="menuitem"
-            onClick={() => setIsOpen(false)}
-          >
-            <span className="dropdown-icon">👤</span>
-            پروفایل من
-          </Link>
-          <button 
-            className="dropdown-item logout-item"
-            role="menuitem"
-            onClick={() => {
-              setIsOpen(false);
-              onLogout();
-            }}
-          >
-            <span className="dropdown-icon">🚪</span>
-            خروج از حساب
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
 /* ========== Main Home Component ========== */
 export default function Home() {
-  const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [stats, setStats] = useState(null);
   const [loadingItems, setLoadingItems] = useState(true);
   const [loadingStats, setLoadingStats] = useState(true);
-  
-  // Auth state
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userData, setUserData] = useState(null);
-
-  // Check authentication status on mount
-  useEffect(() => {
-    const checkAuth = () => {
-      const authenticated = isAuthenticated();
-      setIsLoggedIn(authenticated);
-      if (authenticated) {
-        setUserData(getUserData());
-      }
-    };
-    checkAuth();
-  }, []);
+  const { isLoggedIn } = useAuth();
 
   useEffect(() => {
     fetchRecentItems()
@@ -210,37 +122,8 @@ export default function Home() {
       .finally(() => setLoadingStats(false));
   }, []);
 
-  const handleLogout = () => {
-    clearAuth();
-    setIsLoggedIn(false);
-    setUserData(null);
-    navigate("/");
-  };
-
   return (
     <div className="home-container">
-      {/* Header */}
-      <header className="home-header">
-        <div className="header-content">
-          <Link to="/" className="header-brand">
-            <span className="brand-icon">🎓</span>
-            <span className="brand-text">شریف گم‌شده</span>
-          </Link>
-          <nav className="header-nav">
-            <Link to="/map" className="nav-link">نقشه</Link>
-            
-            {isLoggedIn ? (
-              <UserMenu user={userData} onLogout={handleLogout} />
-            ) : (
-              <>
-                <Link to="/signup" className="nav-link">ثبت‌نام</Link>
-                <Link to="/login" className="nav-link nav-btn">ورود</Link>
-              </>
-            )}
-          </nav>
-        </div>
-      </header>
-
       <main className="home-main">
         {/* Hero Section */}
         <section className="hero-section">

@@ -3,6 +3,7 @@ import { UI_TEXT } from "../../Components/ItemUi/textFormat";
 import { THEME } from "./itemTheme";
 import FieldBlock from "../../Components/ItemUi/FieldBlock";
 import PreviewLine from "../../Components/ItemUi/PreviewLine";
+import "./ItemPages.css";
 
 const CATEGORY_OPTIONS = [
   { value: "", label: "یک دسته‌بندی انتخاب کنید..." },
@@ -150,8 +151,12 @@ export default function AddItemPage() {
     (category ? category : "—");
 
   return (
-    <div {...UI_TEXT.page} style={{ ...UI_TEXT.page.style, color: THEME.text }}>
-      <div className="py-4 px-3">
+    <div
+      {...UI_TEXT.page}
+      className="item-page item-page--add"
+      style={{ ...UI_TEXT.page.style, color: THEME.text }}
+    >
+      <div className="py-4 px-3 item-page__content">
         {/* Wrapper that truly centers everything */}
         <div className="mx-auto" style={{ width: "100%", maxWidth: 860 }}>
           <header className="text-center mb-4">

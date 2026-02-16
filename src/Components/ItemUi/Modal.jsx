@@ -6,6 +6,7 @@ export default function Modal({ title, onClose, children }) {
   return (
     <div
       dir="rtl"
+      className="item-modal"
       style={{
         ...UI_TEXT.page.style,
         position: "fixed",

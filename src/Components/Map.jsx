@@ -224,6 +224,10 @@ export default function LostAndFoundMap() {
       />
 
       <div className="map-wrapper">
+        <div className="map-toolbar">
+          <div className="map-title">نقشه اشیاء گم‌شده</div>
+          <div className="map-hint">برای افزودن، روی نقشه کلیک کنید</div>
+        </div>
         <MapContainer
           center={center}
           zoom={16}

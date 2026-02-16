@@ -1,0 +1,237 @@
+:root {
+  --app-topbar-height: 72px;
+}
+
+.app-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  font-family: "Vazirmatn", "Inter", system-ui, sans-serif;
+}
+
+.app-topbar__content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--app-topbar-height);
+  gap: 16px;
+}
+
+.app-topbar__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: #111827;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.app-topbar__brand-icon {
+  font-size: 26px;
+}
+
+.app-topbar__nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.app-topbar__link {
+  color: rgba(17, 24, 39, 0.85);
+  text-decoration: none;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.app-topbar__link:hover {
+  background: rgba(17, 24, 39, 0.08);
+  color: #0f172a;
+}
+
+.app-topbar__link--cta {
+  background: #111827;
+  color: #ffffff;
+}
+
+.app-topbar__link--cta:hover {
+  background: #1f2937;
+  color: #ffffff;
+}
+
+.topbar-user {
+  position: relative;
+}
+
+.topbar-user__trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: #ffffff;
+  border: none;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+}
+
+.topbar-user__trigger:hover {
+  background: #f3f4f6;
+}
+
+.topbar-user__avatar {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: #fff;
+}
+
+.topbar-user__name {
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topbar-user__arrow {
+  font-size: 10px;
+  color: #9ca3af;
+  transition: transform 0.2s ease;
+}
+
+.topbar-user__arrow.open {
+  transform: rotate(180deg);
+}
+
+.topbar-user__dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 200px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  overflow: hidden;
+  animation: topbarDrop 0.2s ease-out;
+}
+
+@keyframes topbarDrop {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.topbar-user__header {
+  padding: 14px 16px;
+  background: #f8fafc;
+}
+
+.topbar-user__email {
+  font-size: 13px;
+  color: #6b7280;
+  direction: ltr;
+  display: block;
+  text-align: right;
+}
+
+.topbar-user__divider {
+  height: 1px;
+  background: #e5e7eb;
+}
+
+.topbar-user__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 14px;
+  color: #374151;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.topbar-user__item:hover {
+  background: #f3f4f6;
+}
+
+.topbar-user__icon {
+  font-size: 16px;
+}
+
+.topbar-user__logout {
+  color: #dc2626;
+}
+
+.topbar-user__logout:hover {
+  background: #fef2f2;
+}
+
+@media (max-width: 900px) {
+  .app-topbar__content {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .app-topbar__nav {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 600px) {
+  :root {
+    --app-topbar-height: 64px;
+  }
+
+  .app-topbar__content {
+    padding: 12px 16px;
+  }
+
+  .app-topbar__brand-text {
+    display: none;
+  }
+
+  .topbar-user__name {
+    display: none;
+  }
+
+  .topbar-user__trigger {
+    padding: 8px;
+  }
+
+  .topbar-user__dropdown {
+    left: auto;
+    right: 0;
+  }
+}
