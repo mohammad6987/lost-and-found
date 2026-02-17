@@ -14,6 +14,9 @@ import {
 } from "./auth";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://lostfound1.pythonanywhere.com";
+const PRODUCTS_API_BASE_URL =
+  import.meta.env.VITE_PRODUCTS_API_BASE_URL ||
+  "https://sharif-lost-found-production.up.railway.app";
 
 // Track ongoing refresh to prevent multiple simultaneous refreshes
 let isRefreshing = false;
@@ -372,20 +375,51 @@ export async function getCurrentUser() {
  * Fallback: GET /api/product
  */
 export async function getProducts() {
-  try {
-    return await fetchAPI("/api/products", {
-      method: "GET",
-      headers: { accept: "*/*" },
-    });
-  } catch (error) {
-    if (error?.status === 404) {
-      return fetchAPI("/api/product", {
-        method: "GET",
-        headers: { accept: "*/*" },
-      });
-    }
-    throw error;
+  const accessToken = getAccessToken();
+  const headers = {
+    accept: "*/*",
+  };
+
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
   }
+
+  const tryEndpoints = ["/api/products", "/api/product"];
+  let lastError = null;
+
+  for (const endpoint of tryEndpoints) {
+    try {
+      const response = await fetch(`${PRODUCTS_API_BASE_URL}${endpoint}`, {
+        method: "GET",
+        headers,
+      });
+
+      let data;
+      try {
+        data = await response.json();
+      } catch {
+        data = {};
+      }
+
+      if (!response.ok) {
+        const error = new Error(
+          data.error || data.detail || data.message || getErrorMessage(response.status)
+        );
+        error.status = response.status;
+        error.data = data;
+        throw error;
+      }
+
+      return data;
+    } catch (error) {
+      lastError = error;
+      if (error?.status !== 404) {
+        break;
+      }
+    }
+  }
+
+  throw lastError || new Error("Failed to fetch products.");
 }
 
 // ========== Password Reset API ==========
