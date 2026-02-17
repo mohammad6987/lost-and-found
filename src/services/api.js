@@ -13,10 +13,14 @@ import {
   setRememberMe,
 } from "./auth";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://lostfound1.pythonanywhere.com";
-const PRODUCTS_API_BASE_URL =
-  import.meta.env.VITE_PRODUCTS_API_BASE_URL ||
-  "https://sharif-lost-found-production.up.railway.app";
+const USE_DEV_PROXY = import.meta.env.DEV && import.meta.env.VITE_USE_DEV_PROXY === "true";
+const API_BASE_URL = USE_DEV_PROXY
+  ? "/auth-api"
+  : import.meta.env.VITE_API_BASE_URL || "https://lostfound1.pythonanywhere.com";
+const PRODUCTS_API_BASE_URL = USE_DEV_PROXY
+  ? "/products-api"
+  : import.meta.env.VITE_PRODUCTS_API_BASE_URL ||
+    "https://sharif-lost-found-production.up.railway.app";
 
 // Track ongoing refresh to prevent multiple simultaneous refreshes
 let isRefreshing = false;
