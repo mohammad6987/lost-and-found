@@ -1,13 +1,17 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { UI_TEXT } from "../../Components/ItemUi/textFormat";
 import { THEME } from "./itemTheme";
 import Modal from "../../Components/ItemUi/Modal";
 import PreviewLine from "../../Components/ItemUi/PreviewLine";
-import { CURRENT_USER, MOCK_ITEMS } from "../../mock/mockItems";
+import { useAuth } from "../../context/AuthContext";
+import { fetchProductsAsItems } from "../../services/products";
 import "./ItemPages.css";
 
 const CATEGORY_LABELS = {
+  electronics: "الکترونیک",
+  documents: "مدارک",
+  accessories: "اکسسوری",
   phones: "موبایل",
   handbags: "کیف دستی",
   wallets: "کیف پول",
@@ -48,13 +52,25 @@ function fmt(tsIso) {
 export default function RecentLostItemsPage() {
   const nav = useNavigate();
   const [selected, setSelected] = useState(null);
+  const [items, setItems] = useState([]);
+  const { user } = useAuth();
+  const currentUserEmail = user?.email || "";
+
+  useEffect(() => {
+    fetchProductsAsItems()
+      .then(setItems)
+      .catch((err) => {
+        console.error(err);
+        setItems([]);
+      });
+  }, []);
 
   const lostItems = useMemo(() => {
-    return MOCK_ITEMS
+    return items
       .filter((x) => x.type === "lost")
       .slice()
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  }, []);
+  }, [items]);
 
   function openItem(item) {
     setSelected(item);
@@ -94,7 +110,7 @@ export default function RecentLostItemsPage() {
               ) : (
                 <div className="list-group list-group-flush">
                   {lostItems.map((item) => {
-                    const isOwner = item.relatedProfile === CURRENT_USER;
+                    const isOwner = item.relatedProfile === currentUserEmail;
                     return (
                       <button
                         key={item.id}
@@ -163,7 +179,14 @@ export default function RecentLostItemsPage() {
               <div className="border-top" />
               <PreviewLine label="نام" value={selected.name || "—"} />
               <div className="border-top" />
-              <PreviewLine label="دسته‌بندی" value={CATEGORY_LABELS[selected.category] || "—"} />
+              <PreviewLine
+                label="دسته‌بندی"
+                value={
+                  CATEGORY_LABELS[selected.category] ||
+                  selected.categoryLabel ||
+                  "—"
+                }
+              />
               <div className="border-top" />
               <PreviewLine label="پروفایل مرتبط" value={selected.relatedProfile || "—"} />
               <div className="border-top" />
@@ -174,7 +197,7 @@ export default function RecentLostItemsPage() {
               <PreviewLine label="توضیحات" value={selected.notes?.trim() ? selected.notes : "—"} />
 
               <div className="d-flex justify-content-center gap-2 mt-3">
-                {selected.relatedProfile === CURRENT_USER ? (
+                {selected.relatedProfile === currentUserEmail ? (
                   <button
                     className="btn px-4"
                     style={{
@@ -200,7 +223,7 @@ export default function RecentLostItemsPage() {
                   </button>
                 )}
 
-                {selected.relatedProfile === CURRENT_USER ? (
+                {selected.relatedProfile === currentUserEmail ? (
                   <button className="btn btn-outline-secondary px-4" disabled>
                     شما صاحب این شیء هستید
                   </button>

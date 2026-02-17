@@ -366,6 +366,28 @@ export async function getCurrentUser() {
   });
 }
 
+/**
+ * Get all products
+ * Backend endpoint: GET /api/products
+ * Fallback: GET /api/product
+ */
+export async function getProducts() {
+  try {
+    return await fetchAPI("/api/products", {
+      method: "GET",
+      headers: { accept: "*/*" },
+    });
+  } catch (error) {
+    if (error?.status === 404) {
+      return fetchAPI("/api/product", {
+        method: "GET",
+        headers: { accept: "*/*" },
+      });
+    }
+    throw error;
+  }
+}
+
 // ========== Password Reset API ==========
 
 /**

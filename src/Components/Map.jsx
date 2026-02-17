@@ -9,6 +9,7 @@ import {
 } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-markercluster";
 import L from "leaflet";
+import { fetchProductsAsItems } from "../services/products";
 
 import "leaflet/dist/leaflet.css";
 import "../assets/Map.css";
@@ -28,6 +29,10 @@ const CATEGORY_META = {
 
 function getCategoryMeta(category) {
   return CATEGORY_META[category] || CATEGORY_META.other;
+}
+
+function getCategoryLabel(item) {
+  return item?.categoryLabel || getCategoryMeta(item?.category).label;
 }
 
 const STATIC_ITEMS = [
@@ -70,12 +75,6 @@ const TILE_URL = import.meta.env.VITE_MAP_TILE_URL;
 const TILE_ATTR = import.meta.env.VITE_MAP_ATTRIBUTION;
 
 /* ================== api ================== */
-async function getLostItems() {
-  const res = await fetch(`${API_BASE}/lost-items`);
-  if (!res.ok) throw new Error("Failed to fetch items");
-  return res.json();
-}
-
 async function createLostItem(item) {
   const res = await fetch(`${API_BASE}/lost-items`, {
     method: "POST",
@@ -184,7 +183,7 @@ function Sidebar({
               className="badge"
               style={{ background: getCategoryMeta(item.category).color }}
             >
-              {getCategoryMeta(item.category).label}
+              {getCategoryLabel(item)}
             </div>
             <div className="item-name">{item.name}</div>
             <div className="item-timestamp">
@@ -216,12 +215,17 @@ export default function LostAndFoundMap() {
   const markerRefs = useRef({});
 
   useEffect(() => {
-    getLostItems()
+    fetchProductsAsItems()
       .then((apiItems) => {
-        setItems(apiItems);
+        const mapItems = apiItems.filter(
+          (item) =>
+            typeof item.x === "number" &&
+            typeof item.y === "number"
+        );
+        setItems(mapItems);
         setSelectedCategories(
           Array.from(
-            new Set(apiItems.map((item) => item.category).filter(Boolean))
+            new Set(mapItems.map((item) => item.category).filter(Boolean))
           )
         );
       })
@@ -316,7 +320,7 @@ export default function LostAndFoundMap() {
                   <Popup>
                     <strong>{item.name}</strong>
                     <br />
-                    {getCategoryMeta(item.category).label}
+                    {getCategoryLabel(item)}
                     <br />
                     {new Date(item.timestamp).toLocaleString("fa-IR")}
                   </Popup>

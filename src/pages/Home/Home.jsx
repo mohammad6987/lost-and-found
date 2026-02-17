@@ -1,46 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { fetchProductsAsItems } from "../../services/products";
 import "./Home.css";
-
-// Mock data - TODO: Replace with actual API call when backend is ready
-const MOCK_ITEMS = [
-  {
-    id: 1,
-    name: "لپتاپ ASUS",
-    category: "electronics",
-    location: "کتابخانه مرکزی",
-    timestamp: "2025-01-01T09:30:00",
-  },
-  {
-    id: 2,
-    name: "جزوه ریاضی ۲",
-    category: "documents",
-    location: "دانشکده مهندسی",
-    timestamp: "2025-01-01T14:10:00",
-  },
-  {
-    id: 3,
-    name: "کیف پول چرمی",
-    category: "other",
-    location: "سلف سرویس",
-    timestamp: "2025-01-01T18:20:00",
-  },
-  {
-    id: 4,
-    name: "ژاکت مشکی",
-    category: "clothing",
-    location: "ساختمان آموزش",
-    timestamp: "2025-01-01T11:45:00",
-  },
-];
-
-// Mock stats - TODO: Replace with actual API call
-const MOCK_STATS = {
-  todayItems: 12,
-  totalItems: 248,
-  resolvedItems: 186,
-};
 
 // Category config
 const CATEGORIES = {
@@ -50,15 +12,31 @@ const CATEGORIES = {
   other: { label: "سایر", icon: "📦", color: "#f59e0b" },
 };
 
-// TODO: Replace with actual API service
 async function fetchRecentItems() {
-  await new Promise((resolve) => setTimeout(resolve, 800));
-  return MOCK_ITEMS;
+  const items = await fetchProductsAsItems();
+  return items
+    .slice()
+    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+    .slice(0, 4)
+    .map((item) => ({
+      id: item.id,
+      name: item.name,
+      category: item.category,
+      location: item.locationText,
+      timestamp: item.timestamp,
+    }));
 }
 
 async function fetchStats() {
-  await new Promise((resolve) => setTimeout(resolve, 500));
-  return MOCK_STATS;
+  const items = await fetchProductsAsItems();
+  const today = new Date().toDateString();
+  return {
+    todayItems: items.filter(
+      (item) => new Date(item.timestamp).toDateString() === today
+    ).length,
+    totalItems: items.length,
+    resolvedItems: items.filter((item) => item.status === "matched").length,
+  };
 }
 
 /* ========== Item Card Component ========== */
