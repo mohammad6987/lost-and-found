@@ -371,7 +371,7 @@ export async function getCurrentUser() {
 
 /**
  * Get all products
- * Backend endpoint: GET /api/products
+ * Backend endpoint: GET /api/product
  * Fallback: GET /api/product
  */
 export async function getProducts() {
@@ -384,7 +384,7 @@ export async function getProducts() {
     headers.Authorization = `Bearer ${accessToken}`;
   }
 
-  const tryEndpoints = ["/api/products", "/api/product"];
+  const tryEndpoints = [ "/api/product"];
   let lastError = null;
 
   for (const endpoint of tryEndpoints) {
