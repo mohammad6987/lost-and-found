@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { AuthProvider } from "../context/AuthContext";
 import TopBar from "./TopBar";
+import AppFooter from "./AppFooter";
 import "./AppLayout.css";
 import { useAuth } from "../context/AuthContext";
 
@@ -25,6 +26,7 @@ export default function AppLayout() {
         <div className="app-shell__content">
           <Outlet />
         </div>
+        <AppFooter />
       </div>
     </AuthProvider>
   );

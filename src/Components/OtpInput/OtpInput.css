@@ -19,18 +19,18 @@
   background: #f9fafb;
   color: #111827;
   transition: all 0.2s ease;
-  caret-color: #667eea;
+  caret-color: var(--brand-blue);
 }
 
 .otp-box:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: var(--brand-blue);
   background: white;
   box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
 }
 
 .otp-box.filled {
-  border-color: #667eea;
+  border-color: var(--brand-blue);
   background: white;
 }
 

@@ -7,7 +7,7 @@
   align-items: flex-start;
   justify-content: center;
   padding: 32px 24px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--brand-blue) 0%, var(--brand-navy) 100%);
   background-attachment: fixed;
   direction: rtl;
   font-family: "Vazirmatn", "Inter", system-ui, sans-serif;
@@ -114,12 +114,12 @@
 
 .toc-link:hover {
   background: rgba(102, 126, 234, 0.15);
-  color: #667eea;
+  color: var(--brand-blue);
   transform: translateX(-4px);
 }
 
 .toc-link:focus {
-  outline: 2px solid #667eea;
+  outline: 2px solid var(--brand-blue);
   outline-offset: 2px;
 }
 
@@ -138,7 +138,7 @@
   color: #111827;
   margin: 0 0 16px;
   padding-bottom: 12px;
-  border-bottom: 2px solid #667eea;
+  border-bottom: 2px solid var(--brand-blue);
   display: inline-block;
 }
 
@@ -185,7 +185,7 @@
   align-items: center;
   gap: 10px;
   padding: 14px 32px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--brand-blue) 0%, var(--brand-navy) 100%);
   color: white;
   border: none;
   border-radius: 12px;
@@ -384,7 +384,7 @@
 
 .toc-link:focus-visible,
 .back-btn:focus-visible {
-  outline: 3px solid #667eea;
+  outline: 3px solid var(--brand-blue);
   outline-offset: 2px;
 }
 

@@ -13,8 +13,22 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "../assets/Map.css";
 
+const CATEGORY_META = {
+  electronics: { label: "الکترونیک", color: "#2a6bd9" },
+  documents: { label: "مدارک", color: "#16a34a" },
+  clothing: { label: "پوشاک", color: "#db2777" },
+  other: { label: "سایر", color: "#f59e0b" },
+  phones: { label: "موبایل", color: "#2a6bd9" },
+  handbags: { label: "کیف دستی", color: "#7c3aed" },
+  wallets: { label: "کیف پول", color: "#f97316" },
+  keys: { label: "کلید", color: "#0ea5e9" },
+  id_cards: { label: "کارت شناسایی", color: "#10b981" },
+  laptops: { label: "لپ‌تاپ", color: "#2563eb" },
+};
 
-
+function getCategoryMeta(category) {
+  return CATEGORY_META[category] || CATEGORY_META.other;
+}
 
 const STATIC_ITEMS = [
   // Cluster 1
@@ -74,12 +88,14 @@ async function createLostItem(item) {
 
 /* ================== helpers ================== */
 function markerIcon(category) {
+  const meta = getCategoryMeta(category);
   return L.divIcon({
     className: "",
-    html: `<div class="custom-marker marker-${category}"></div>`,
+    html: `<div class="custom-marker" style="background:${meta.color}"></div>`,
     iconSize: [14, 14],
     iconAnchor: [7, 7],
     category,
+    categoryColor: meta.color,
   });
 }
 
@@ -125,16 +141,19 @@ function Sidebar({
   items,
   selectedId,
   onSelect,
-  categories,
   selectedCategories,
   toggleCategory,
 }) {
+  const categories = Array.from(
+    new Set(items.map((item) => item.category).filter(Boolean))
+  );
+
   return (
-    <div className="sidebar">
-      <h3>Lost Items</h3>
+    <aside className="sidebar" dir="rtl">
+      <h3>اشیای گم‌شده</h3>
 
       <div className="filter-section">
-        <strong>Filter by Category</strong>
+        <strong>فیلتر دسته‌بندی</strong>
         {categories.map((cat) => (
           <label key={cat} className="filter-label">
             <input
@@ -142,7 +161,11 @@ function Sidebar({
               checked={selectedCategories.includes(cat)}
               onChange={() => toggleCategory(cat)}
             />
-            {cat}
+            <span
+              className="filter-dot"
+              style={{ background: getCategoryMeta(cat).color }}
+            />
+            {getCategoryMeta(cat).label}
           </label>
         ))}
       </div>
@@ -157,16 +180,19 @@ function Sidebar({
             }`}
             onClick={() => onSelect(item.id)}
           >
-            <div className={`badge ${item.category}`}>
-              {item.category}
+            <div
+              className="badge"
+              style={{ background: getCategoryMeta(item.category).color }}
+            >
+              {getCategoryMeta(item.category).label}
             </div>
             <div className="item-name">{item.name}</div>
             <div className="item-timestamp">
-              {new Date(item.timestamp).toLocaleString()}
+              {new Date(item.timestamp).toLocaleString("fa-IR")}
             </div>
           </div>
         ))}
-    </div>
+    </aside>
   );
 }
 
@@ -180,19 +206,25 @@ export default function LostAndFoundMap() {
     [center[0] + delta, center[1] + delta],
   ];
 
-  const categories = ["electronics", "documents", "clothing", "other"];
-
   //const [items, setItems] = useState([]);
   const [items, setItems] = useState(STATIC_ITEMS);
   const [selectedId, setSelectedId] = useState(null);
-  const [selectedCategories, setSelectedCategories] =
-    useState(categories);
+  const [selectedCategories, setSelectedCategories] = useState([
+    ...new Set(STATIC_ITEMS.map((item) => item.category)),
+  ]);
 
   const markerRefs = useRef({});
 
   useEffect(() => {
     getLostItems()
-      .then(setItems)
+      .then((apiItems) => {
+        setItems(apiItems);
+        setSelectedCategories(
+          Array.from(
+            new Set(apiItems.map((item) => item.category).filter(Boolean))
+          )
+        );
+      })
       .catch((err) => console.error(err));
   }, []);
 
@@ -218,7 +250,6 @@ export default function LostAndFoundMap() {
         items={items}
         selectedId={selectedId}
         onSelect={setSelectedId}
-        categories={categories}
         selectedCategories={selectedCategories}
         toggleCategory={toggleCategory}
       />
@@ -253,7 +284,7 @@ export default function LostAndFoundMap() {
               const dots = Object.entries(counts)
                 .map(
                   ([cat, count]) =>
-                    `<span class="cluster-dot ${cat}" title="${cat}: ${count}"></span>`
+                    `<span class="cluster-dot" style="background:${getCategoryMeta(cat).color}" title="${getCategoryMeta(cat).label}: ${count}"></span>`
                 )
                 .join("");
 
@@ -285,9 +316,9 @@ export default function LostAndFoundMap() {
                   <Popup>
                     <strong>{item.name}</strong>
                     <br />
-                    {item.category}
+                    {getCategoryMeta(item.category).label}
                     <br />
-                    {new Date(item.timestamp).toLocaleString()}
+                    {new Date(item.timestamp).toLocaleString("fa-IR")}
                   </Popup>
                 </Marker>
               ))}

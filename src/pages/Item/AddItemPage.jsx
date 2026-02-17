@@ -144,8 +144,6 @@ export default function AddItemPage() {
     setNotes("");
   }
 
-  const [isPrimaryHover, setIsPrimaryHover] = useState(false);
-
   const categoryLabel =
     CATEGORY_OPTIONS.find((c) => c.value === category)?.label ||
     (category ? category : "—");
@@ -156,34 +154,42 @@ export default function AddItemPage() {
       className="item-page item-page--add"
       style={{ ...UI_TEXT.page.style, color: THEME.text }}
     >
-      <div className="py-4 px-3 item-page__content">
-        {/* Wrapper that truly centers everything */}
-        <div className="mx-auto" style={{ width: "100%", maxWidth: 860 }}>
-          <header className="text-center mb-4">
+      <div className="item-page__content item-add item-add__content">
+        <div className="mx-auto item-add__wrapper">
+          <header className="text-center mb-4 item-add__header">
             <h1 className="h3 mb-2">افزودن شیء {typeLabel}</h1>
             <div className="text-muted">
               فرم ایجاد یک رکورد جدید برای سامانه اشیای گمشده و پیداشده
             </div>
           </header>
 
-          {/* فرم */}
-          <div
-            className="card shadow-sm"
-            style={{ width: "100%", borderColor: THEME.border }}
-          >
+          <div className="card shadow-sm item-add__form-card">
             <div className="card-body">
+              <div className="item-add__clock-inline">
+                <span className="badge d-inline-flex align-items-center gap-2 item-add__clock-badge">
+                  <Icon name="clock" />
+                  <span>
+                    زمان جاری:{" "}
+                    <span {...UI_TEXT.ltrInline}>
+                      {now.toLocaleString(undefined, {
+                        year: "numeric",
+                        month: "2-digit",
+                        day: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit",
+                      })}
+                    </span>
+                  </span>
+                </span>
+              </div>
               <form onSubmit={handleSubmit} noValidate>
-                {/* نوع */}
                 <FieldBlock
                   title="نوع"
                   icon={<Icon name="type" />}
                   hint="اگر شیء را گم کرده‌اید «گمشده» و اگر آن را پیدا کرده‌اید «پیداشده» را انتخاب کنید."
                 >
-                  <div
-                    className="btn-group w-100"
-                    role="group"
-                    aria-label="Type"
-                  >
+                  <div className="btn-group w-100 item-add__type-group" role="group" aria-label="Type">
                     <input
                       type="radio"
                       className="btn-check"
@@ -194,14 +200,8 @@ export default function AddItemPage() {
                       onChange={() => setType("lost")}
                     />
                     <label
-                      className="btn"
+                      className={`btn item-add__type-btn ${type === "lost" ? "active" : ""}`}
                       htmlFor="typeLost"
-                      style={{
-                        border: `1px solid ${THEME.primary}`,
-                        color: type === "lost" ? "#fff" : THEME.primary,
-                        backgroundColor:
-                          type === "lost" ? THEME.primary : "transparent",
-                      }}
                     >
                       گمشده
                     </label>
@@ -216,21 +216,14 @@ export default function AddItemPage() {
                       onChange={() => setType("found")}
                     />
                     <label
-                      className="btn"
+                      className={`btn item-add__type-btn ${type === "found" ? "active" : ""}`}
                       htmlFor="typeFound"
-                      style={{
-                        border: `1px solid ${THEME.primary}`,
-                        color: type === "found" ? "#fff" : THEME.primary,
-                        backgroundColor:
-                          type === "found" ? THEME.primary : "transparent",
-                      }}
                     >
                       پیداشده
                     </label>
                   </div>
                 </FieldBlock>
 
-                {/* نام شیء */}
                 <FieldBlock
                   title="نام شیء"
                   icon={<Icon name="tag" />}
@@ -251,7 +244,6 @@ export default function AddItemPage() {
                   />
                 </FieldBlock>
 
-                {/* دسته‌بندی */}
                 <FieldBlock
                   title="دسته‌بندی"
                   icon={<Icon name="category" />}
@@ -276,7 +268,6 @@ export default function AddItemPage() {
                   </select>
                 </FieldBlock>
 
-                {/* پروفایل مرتبط */}
                 <FieldBlock
                   title="پروفایل مرتبط"
                   icon={<Icon name="user" />}
@@ -301,19 +292,11 @@ export default function AddItemPage() {
                   />
                 </FieldBlock>
 
-                {/* مکان */}
                 <FieldBlock
                   title="مکان (در محدوده دانشگاه)"
                   icon={<Icon name="map" />}
                 >
-                  <div
-                    className="rounded p-3"
-                    style={{
-                      ...UI_TEXT.page.style,
-                      background: THEME.primarySoft,
-                      border: `1px solid ${THEME.border}`,
-                    }}
-                  >
+                  <div className="rounded p-3 item-add__location-note" style={UI_TEXT.page.style}>
                     <div className="fw-semibold">به‌زودی</div>
                     <div className="text-muted">
                       پس از اضافه شدن قابلیت نقشه، این بخش فعال خواهد شد.
@@ -321,7 +304,6 @@ export default function AddItemPage() {
                   </div>
                 </FieldBlock>
 
-                {/* توضیحات */}
                 <FieldBlock
                   title="توضیحات (اختیاری)"
                   icon={<Icon name="note" />}
@@ -340,37 +322,24 @@ export default function AddItemPage() {
                   />
                 </FieldBlock>
 
-                {/* دکمه‌ها */}
-                <div className="d-flex justify-content-center gap-2">
+                <div className="d-flex justify-content-center gap-2 item-add__actions">
                   <button
                     type="submit"
-                    className="btn px-4"
+                    className="btn px-4 item-add__submit-btn"
                     disabled={!isValid}
-                    style={{
-                      backgroundColor: isPrimaryHover
-                        ? THEME.primaryHover
-                        : THEME.primary,
-                      borderColor: isPrimaryHover
-                        ? THEME.primaryHover
-                        : THEME.primary,
-                      color: "#fff",
-                    }}
-                    onMouseEnter={() => setIsPrimaryHover(true)}
-                    onMouseLeave={() => setIsPrimaryHover(false)}
                   >
                     ثبت شیء {typeLabel}
                   </button>
 
                   <button
                     type="button"
-                    className="btn btn-outline-secondary px-4"
+                    className="btn btn-outline-secondary px-4 item-add__reset-btn"
                     onClick={() => {
                       setName("");
                       setCategory("");
                       setProfile("");
                       setNotes("");
                     }}
-                    style={{ borderColor: THEME.border }}
                   >
                     پاک‌سازی
                   </button>
@@ -379,38 +348,10 @@ export default function AddItemPage() {
             </div>
           </div>
 
-          {/* پیش‌نمایش */}
-          <div
-            className="card shadow-sm mt-4"
-            style={{ width: "100%", borderColor: THEME.border }}
-          >
-            <div className="card-header bg-white text-center">
+          <div className="card shadow-sm mt-4 item-add__preview-card">
+            <div className="card-header text-center item-add__preview-header">
               <div className="d-flex flex-column align-items-center gap-2">
                 <strong>پیش‌نمایش</strong>
-
-                <span
-                  className="badge d-inline-flex align-items-center gap-2"
-                  style={{
-                    background: THEME.primarySoft,
-                    color: THEME.primary,
-                    border: `1px solid ${THEME.border}`,
-                  }}
-                >
-                  <Icon name="clock" />
-                  <span>
-                    زمان جاری:{" "}
-                    <span {...UI_TEXT.ltrInline}>
-                      {now.toLocaleString(undefined, {
-                        year: "numeric",
-                        month: "2-digit",
-                        day: "2-digit",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        second: "2-digit",
-                      })}
-                    </span>
-                  </span>
-                </span>
 
                 <div className="text-muted small">
                   این بخش نشان می‌دهد چه اطلاعاتی ذخیره خواهد شد (مکان فعلاً حذف شده است).
@@ -418,18 +359,18 @@ export default function AddItemPage() {
               </div>
             </div>
 
-            <div className="card-body">
-              <div className="border-top" />
+            <div className="card-body item-add__preview-body">
+              <div className="border-top item-add__divider" />
               <PreviewLine label="نوع" value={typeLabel} />
-              <div className="border-top" />
+              <div className="border-top item-add__divider" />
               <PreviewLine label="نام" value={name.trim() || "—"} />
-              <div className="border-top" />
+              <div className="border-top item-add__divider" />
               <PreviewLine label="دسته‌بندی" value={categoryLabel} />
-              <div className="border-top" />
+              <div className="border-top item-add__divider" />
               <PreviewLine label="پروفایل مرتبط" value={profile.trim() || "—"} />
-              <div className="border-top" />
+              <div className="border-top item-add__divider" />
               <PreviewLine label="مکان" value="به‌زودی (قابلیت نقشه)" />
-              <div className="border-top" />
+              <div className="border-top item-add__divider" />
               <PreviewLine label="توضیحات" value={notes.trim() || "—"} />
             </div>
           </div>

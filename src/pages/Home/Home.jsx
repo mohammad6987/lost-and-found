@@ -209,7 +209,7 @@ export default function Home() {
               <h3>جستجو در نقشه</h3>
               <p>اشیاء گم‌شده را روی نقشه ببینید</p>
             </Link>
-            <Link to="/items/new" className="action-card">
+            <Link to="/add" className="action-card">
               <span className="action-icon">📝</span>
               <h3>ثبت شیء پیداشده</h3>
               <p>شیء پیدا کردید؟ اینجا ثبت کنید</p>
@@ -237,22 +237,6 @@ export default function Home() {
           </div>
         </section>
       </main>
-
-      {/* Footer */}
-      <footer className="home-footer">
-        <div className="footer-content">
-          <div className="footer-brand">
-            <span>🎓</span> سامانه گم‌شده و پیداشده دانشگاه شریف
-          </div>
-          <nav className="footer-nav">
-            <Link to="/map">نقشه</Link>
-            <Link to="/terms">قوانین</Link>
-            <Link to="/about">درباره ما</Link>
-            <Link to="/contact">تماس</Link>
-          </nav>
-          <p className="footer-copy">© ۱۴۰۴ - دانشگاه صنعتی شریف</p>
-        </div>
-      </footer>
     </div>
   );
 }

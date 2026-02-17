@@ -6,9 +6,15 @@
   position: sticky;
   top: 0;
   z-index: 1000;
-  background: rgba(255, 255, 255, 0.12);
+  width: 100vw;
+  margin-inline: calc(50% - 50vw);
+  background: linear-gradient(
+    135deg,
+    rgba(11, 31, 58, 0.58) 0%,
+    rgba(31, 79, 163, 0.42) 100%
+  );
   backdrop-filter: blur(14px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
   font-family: "Vazirmatn", "Inter", system-ui, sans-serif;
 }
 
@@ -59,13 +65,13 @@
 }
 
 .app-topbar__link--cta {
-  background: #111827;
-  color: #ffffff;
+  background: var(--brand-gold);
+  color: #1f2937;
 }
 
 .app-topbar__link--cta:hover {
-  background: #1f2937;
-  color: #ffffff;
+  background: var(--brand-gold-dark);
+  color: #1f2937;
 }
 
 .topbar-user {

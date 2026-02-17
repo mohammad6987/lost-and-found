@@ -5,7 +5,7 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--brand-blue) 0%, var(--brand-navy) 100%);
   background-attachment: fixed;
   direction: rtl;
   font-family: "Vazirmatn", "Inter", system-ui, sans-serif;
@@ -114,7 +114,7 @@
   width: 100px;
   height: 100px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--brand-blue) 0%, var(--brand-navy) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -168,7 +168,7 @@
 
 .badge-blue {
   background: rgba(37, 99, 235, 0.1);
-  color: #2563eb;
+  color: var(--brand-blue-2);
 }
 
 .badge-gray {
@@ -228,7 +228,7 @@
 
 .tab-btn.active {
   background: white;
-  color: #667eea;
+  color: var(--brand-blue);
 }
 
 /* ========== Tab Content ========== */
@@ -376,7 +376,7 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--brand-blue) 0%, var(--brand-navy) 100%);
   color: white;
 }
 
@@ -460,7 +460,7 @@
 
 .item-status.active {
   background: #dbeafe;
-  color: #2563eb;
+  color: var(--brand-blue-2);
 }
 
 .item-status.resolved {
@@ -650,7 +650,7 @@
 .item-card:focus-visible,
 .btn:focus-visible,
 .back-btn:focus-visible {
-  outline: 3px solid #667eea;
+  outline: 3px solid var(--brand-blue);
   outline-offset: 2px;
 }
 

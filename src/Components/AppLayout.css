@@ -2,9 +2,40 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 .app-shell__content {
   flex: 1;
   min-height: 0;
+  padding: 24px;
+  position: relative;
+  z-index: 1;
+}
+
+.app-shell::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: url("../assets/Sharif_University_of_Technology.jpg") center / cover
+    no-repeat;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.app-shell::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    linear-gradient(140deg, rgba(248, 250, 255, 0.22) 0%, rgba(238, 242, 255, 0.18) 45%, rgba(226, 232, 255, 0.16) 100%),
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.12), transparent 55%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+@media (max-width: 600px) {
+  .app-shell__content {
+    padding: 16px;
+  }
 }
