@@ -29,7 +29,8 @@ function UserMenu() {
     return () => document.removeEventListener("keydown", handleEscape);
   }, []);
 
-  const displayName = user?.email?.split("@")[0] || "کاربر";
+  const name = JSON.parse(sessionStorage.getItem("user_data")).name;
+  const displayName = name || "کاربر";
 
   return (
     <div className="topbar-user" ref={menuRef}>
