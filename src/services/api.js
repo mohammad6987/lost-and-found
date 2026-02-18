@@ -16,7 +16,7 @@ import {
 const USE_DEV_PROXY = import.meta.env.DEV && import.meta.env.VITE_USE_DEV_PROXY === "true";
 const API_BASE_URL = USE_DEV_PROXY
   ? "/auth-api"
-  : import.meta.env.VITE_API_BASE_URL || "https://lostfound1.pythonanywhere.com";
+  : import.meta.env.VITE_API_BASE_URL || "https://sharif-lostfound.liara.run/";
 const PRODUCTS_API_BASE_URL = USE_DEV_PROXY
   ? "/products-api"
   : import.meta.env.VITE_PRODUCTS_API_BASE_URL ||
@@ -271,6 +271,7 @@ export async function login(credentials, rememberMe = false) {
   setUserData({
     user_id: response.user_id,
     email: response.email,
+    name: response.name
   });
   
   return response;
@@ -368,7 +369,18 @@ export const resendSignupOtp = resendRegistrationOtp;
  * @returns {Promise<Object>} - User profile data
  */
 export async function getCurrentUser() {
-  return fetchAPI("/api/users/me/", {
+  return fetchAPI("/api/users/profile/", {
+    method: "GET",
+  });
+}
+
+/**
+ * Get user profile extended information
+ * Backend endpoint: GET /api/users/profile
+ * @returns {Promise<Object>} - User profile data (phone_number, user_name, department, etc.)
+ */
+export async function getUserProfile() {
+  return fetchAPI("/api/users/profile/", {
     method: "GET",
   });
 }

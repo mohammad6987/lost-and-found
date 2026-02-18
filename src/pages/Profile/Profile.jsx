@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { isAuthenticated, getUserData, clearAuth } from "../../services/auth";
+import { getUserProfile, getCurrentUser } from "../../services/api";
 import "./Profile.css";
 
 // Mock user data - TODO: Replace with actual API call
@@ -47,6 +48,7 @@ export default function Profile() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("info");
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
   const [userItems, setUserItems] = useState([]);
 
@@ -57,26 +59,112 @@ export default function Profile() {
       return;
     }
 
-    // Simulate API call
     const loadData = async () => {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      
-      // Get stored user data and merge with mock
-      const storedUser = getUserData();
-      setUserProfile({
-        ...MOCK_USER_PROFILE,
-        email: storedUser?.email || MOCK_USER_PROFILE.email,
-      });
-      setUserItems(MOCK_USER_ITEMS);
-      setIsLoading(false);
+      try {
+        // Check if profile data exists in localStorage cache
+        const cachedProfile = localStorage.getItem("userProfileCache");
+        
+        if (cachedProfile) {
+          // Use cached profile data
+          const profileData = JSON.parse(cachedProfile);
+          setUserProfile(profileData);
+          setIsLoading(false);
+          return;
+        }
+
+        // Fetch from API if no cache
+        const profileData = await getUserProfile();
+        const currentUserData = await getCurrentUser();
+        const email = JSON.parse(sessionStorage.getItem("user_data")).email;
+
+        // Transform API data to match component needs
+        const transformedProfile = {
+          name: profileData?.user_name || currentUserData?.username || "کاربر",
+          email: email || "نامشخص",
+          phoneNumber: profileData?.phone_number || "-",
+          department: profileData?.department || "نامشخص",
+          preferredContact: profileData?.preferred_contact_method || "email",
+          socialMedia: profileData?.social_media_links || {},
+          profilePic: profileData?.profile_pic || null,
+          itemsReported: 0,
+          itemsFound: 0,
+          joinedDate: "نامشخص",
+        };
+
+        // Cache the profile data in localStorage
+        localStorage.setItem("userProfileCache", JSON.stringify(transformedProfile));
+
+        setUserProfile(transformedProfile);
+
+        // Simulate loading state completion
+        await new Promise((resolve) => setTimeout(resolve, 300));
+      } catch (error) {
+        console.error("Error loading profile data:", error);
+        // Keep form functional even if API fails
+        const fallbackProfile = {
+          name: "کاربر",
+          email: getUserData()?.email || "نامشخص",
+          phoneNumber: "-",
+          department: "نامشخص",
+          preferredContact: "email",
+          socialMedia: {},
+          profilePic: null,
+          itemsReported: 0,
+          itemsFound: 0,
+          joinedDate: "نامشخص",
+        };
+        
+        // Cache even the fallback data
+        localStorage.setItem("userProfileCache", JSON.stringify(fallbackProfile));
+        setUserProfile(fallbackProfile);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     loadData();
   }, [navigate]);
 
   const handleLogout = () => {
+    // Clear cached profile data on logout
+    localStorage.removeItem("userProfileCache");
     clearAuth();
     navigate("/login");
+  };
+
+  const handleRefreshProfile = async () => {
+    setIsRefreshing(true);
+    try {
+      // Clear cache to force API fetch
+      localStorage.removeItem("userProfileCache");
+
+      // Fetch fresh data from API
+      const profileData = await getUserProfile();
+      const currentUserData = await getCurrentUser();
+
+      // Transform API data to match component needs
+      const transformedProfile = {
+        name: profileData?.user_name || currentUserData?.username || "کاربر",
+        email: currentUserData?.email || "نامشخص",
+        phoneNumber: profileData?.phone_number || "-",
+        department: profileData?.department || "نامشخص",
+        preferredContact: profileData?.preferred_contact_method || "email",
+        socialMedia: profileData?.social_media_links || {},
+        profilePic: profileData?.profile_pic || null,
+        itemsReported: 0,
+        itemsFound: 0,
+        joinedDate: "نامشخص",
+      };
+
+      // Cache the new profile data
+      localStorage.setItem("userProfileCache", JSON.stringify(transformedProfile));
+      setUserProfile(transformedProfile);
+    } catch (error) {
+      console.error("Error refreshing profile:", error);
+      alert("خطا در به‌روزرسانی پروفایل. لطفاً دوباره تلاش کنید.");
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   if (isLoading) {
@@ -100,7 +188,14 @@ export default function Profile() {
             بازگشت
           </Link>
           <h1>پروفایل کاربری</h1>
-          <div className="header-spacer" />
+          <button
+            className="refresh-btn"
+            onClick={handleRefreshProfile}
+            disabled={isRefreshing}
+            title="به‌روزرسانی پروفایل"
+          >
+            {isRefreshing ? "⏳" : "🔄"}
+          </button>
         </div>
       </header>
 
@@ -119,25 +214,27 @@ export default function Profile() {
             <p className="profile-email" dir="ltr">{userProfile?.email}</p>
             <div className="profile-badges">
               <span className="badge badge-blue">
-                📚 {userProfile?.department}
+                🏫 {userProfile?.department}
               </span>
               <span className="badge badge-gray">
-                🎓 {userProfile?.studentId}
+                📱 {userProfile?.phoneNumber}
               </span>
             </div>
           </div>
           <div className="profile-stats">
             <div className="profile-stat">
-              <span className="stat-number">{userProfile?.itemsReported}</span>
+              <span className="stat-number">{userProfile?.itemsReported || 0}</span>
               <span className="stat-text">گزارش شده</span>
             </div>
             <div className="profile-stat">
-              <span className="stat-number">{userProfile?.itemsFound}</span>
+              <span className="stat-number">{userProfile?.itemsFound || 0}</span>
               <span className="stat-text">پیدا شده</span>
             </div>
             <div className="profile-stat">
-              <span className="stat-number">{userProfile?.joinedDate}</span>
-              <span className="stat-text">تاریخ عضویت</span>
+              <span className="stat-number">
+                {userProfile?.preferredContact === "email" ? "📧" : "📱"}
+              </span>
+              <span className="stat-text">روش تماس: {userProfile?.preferredContact}</span>
             </div>
           </div>
         </section>
@@ -166,7 +263,7 @@ export default function Profile() {
                 <h3>اطلاعات شخصی</h3>
                 <div className="info-grid">
                   <div className="info-item">
-                    <span className="info-label">نام و نام خانوادگی</span>
+                    <span className="info-label">نام کاربری</span>
                     <span className="info-value">{userProfile?.name}</span>
                   </div>
                   <div className="info-item">
@@ -174,13 +271,27 @@ export default function Profile() {
                     <span className="info-value" dir="ltr">{userProfile?.email}</span>
                   </div>
                   <div className="info-item">
-                    <span className="info-label">شماره دانشجویی</span>
-                    <span className="info-value">{userProfile?.studentId}</span>
+                    <span className="info-label">شماره تلفن</span>
+                    <span className="info-value" dir="ltr">{userProfile?.phoneNumber}</span>
                   </div>
                   <div className="info-item">
                     <span className="info-label">دانشکده</span>
                     <span className="info-value">{userProfile?.department}</span>
                   </div>
+                  <div className="info-item">
+                    <span className="info-label">روش تماس ترجیحی</span>
+                    <span className="info-value">
+                      {userProfile?.preferredContact === "email" ? "📧 ایمیل" : "📱 تلفن"}
+                    </span>
+                  </div>
+                  {userProfile?.socialMedia && Object.keys(userProfile.socialMedia).length > 0 && (
+                    <div className="info-item">
+                      <span className="info-label">شبکه‌های اجتماعی</span>
+                      <span className="info-value">
+                        {Object.keys(userProfile.socialMedia).join(", ") || "ندارد"}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 

@@ -87,14 +87,14 @@ export function updateAccessToken(access) {
  * @param {string} user.user_id - User ID
  * @param {string} user.email - User email
  */
-export function setUserData({ user_id, email }) {
+export function setUserData({ user_id, email, name }) {
   const storage = getStorage();
   
   // Clear from both storages first
   localStorage.removeItem(USER_DATA_KEY);
   sessionStorage.removeItem(USER_DATA_KEY);
   
-  storage.setItem(USER_DATA_KEY, JSON.stringify({ user_id, email }));
+  storage.setItem(USER_DATA_KEY, JSON.stringify({ user_id, email, name }));
 }
 
 /**
