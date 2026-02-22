@@ -20,7 +20,7 @@ const API_BASE_URL = USE_DEV_PROXY
 const PRODUCTS_API_BASE_URL = USE_DEV_PROXY
   ? "/products-api"
   : import.meta.env.VITE_PRODUCTS_API_BASE_URL ||
-    "https://sharif-lost-found-production.up.railway.app";
+    "https://sharif-lostfound.liara.run";
 
 // Track ongoing refresh to prevent multiple simultaneous refreshes
 let isRefreshing = false;
@@ -400,7 +400,7 @@ export async function getProducts() {
     headers.Authorization = `Bearer ${accessToken}`;
   }
 
-  const tryEndpoints = [ "/api/product"];
+  const tryEndpoints = [ "/api/items/"];
   let lastError = null;
 
   for (const endpoint of tryEndpoints) {
