@@ -85,6 +85,9 @@
 }
 
 .item-page .badge {
+  position: static;
+  top: auto;
+  right: auto;
   font-weight: 700;
   padding: 6px 12px;
   border-radius: 999px;
@@ -151,6 +154,92 @@
   margin-bottom: 12px !important;
 }
 
+.item-add__gate {
+  position: relative;
+  min-height: 100vh;
+}
+
+.item-add__blur {
+  transition: filter 0.2s ease, opacity 0.2s ease;
+}
+
+.item-add__gate.is-locked .item-add__blur {
+  filter: blur(4px);
+  opacity: 0.7;
+  pointer-events: none;
+  user-select: none;
+}
+
+.item-add__lock {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.38);
+  backdrop-filter: blur(2px);
+  z-index: 1200;
+}
+
+.item-add__lock-card {
+  background: #ffffff;
+  border: 1px solid rgba(31, 79, 163, 0.18);
+  border-radius: 16px;
+  padding: 20px 24px;
+  text-align: center;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+  max-width: 360px;
+  width: 100%;
+}
+
+.item-add__lock-title {
+  font-weight: 800;
+  color: var(--brand-navy);
+  margin-bottom: 8px;
+}
+
+.item-add__lock-text {
+  color: #54657d;
+  font-size: 0.95rem;
+  margin-bottom: 16px;
+}
+
+.item-add__lock-btn {
+  background: linear-gradient(135deg, var(--brand-blue) 5%, var(--brand-navy) 100%);
+  color: #ea9999;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.2);
+}
+
+.item-add__lock-btn:hover {
+  color: #36f1e8;
+}
+
+.item-add__profile-locked {
+  background: rgba(232, 240, 255, 0.7) !important;
+  border-color: rgba(31, 79, 163, 0.35) !important;
+}
+
+.item-add__card-header {
+  padding: 20px 24px 0;
+  border-bottom: 1px solid rgba(31, 79, 163, 0.16);
+  background:
+    linear-gradient(165deg, rgba(255, 255, 255, 0.98) 0%, rgba(235, 243, 255, 0.95) 100%);
+  border-radius: 18px 18px 0 0;
+}
+
+.item-add__card-header .item-add__clock-inline {
+  margin-bottom: 16px;
+}
+
 .item-add__form-card,
 .item-add__preview-card {
   border: 1px solid rgba(31, 79, 163, 0.2) !important;
@@ -181,22 +270,23 @@
 }
 
 .item-add__type-btn {
-  border: 1px solid rgba(31, 79, 163, 0.45);
+  border: 1px solid rgba(31, 79, 163, 0.85);
   color: var(--brand-blue);
-  background: rgba(245, 249, 255, 0.94);
+  background: #f2f6ff;
   border-radius: 12px !important;
   transition: all 0.2s ease;
 }
 
 .item-add__type-btn:hover {
   border-color: var(--brand-blue);
-  background: rgba(222, 234, 252, 0.86);
+  background: #e6efff;
 }
 
 .item-add__type-btn.active {
   color: #fff;
-  background: linear-gradient(135deg, var(--brand-blue) 0%, var(--brand-navy) 100%);
-  border-color: transparent;
+  background: linear-gradient(135deg, #1f4fa3 0%, #153470 100%);
+  border-color: #153470;
+  box-shadow: 0 8px 16px rgba(31, 79, 163, 0.28);
 }
 
 .item-add__location-note {
@@ -214,6 +304,19 @@
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6);
 }
 
+.item-add__map-lock {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #5b6b7f;
+  font-weight: 600;
+  text-align: center;
+  padding: 0 12px;
+  background:
+    linear-gradient(140deg, rgba(255, 255, 255, 0.9) 0%, rgba(226, 236, 248, 0.9) 100%);
+}
+
 .item-add__map .leaflet-container {
   width: 100%;
   height: 100%;
@@ -228,10 +331,18 @@
 }
 
 .item-add__submit-btn {
-  background: linear-gradient(135deg, var(--brand-blue) 0%, var(--brand-navy) 100%);
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
   border-color: transparent;
   color: #fff;
-  box-shadow: 0 8px 18px rgba(11, 31, 58, 0.22);
+  box-shadow: 0 8px 18px rgba(22, 163, 74, 0.25);
+}
+
+.item-add__submit-btn:disabled {
+  background: linear-gradient(135deg, #86efac 0%, #4ade80 100%);
+  color: #0f3d1f;
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 1;
 }
 
 .item-add__submit-btn:hover:not(:disabled) {
@@ -264,11 +375,14 @@
 
 .item-add__clock-inline {
   display: flex;
-  justify-content: flex-end;
+  justify-content: right;
+  width: 100%;
   margin-bottom: 16px;
+  margin-top: 2%;
 }
 
-.item-add__clock-badge {
+.item-page .item-add__clock-badge {
+  position: static;
   background: rgba(31, 79, 163, 0.1) !important;
   color: var(--brand-blue) !important;
   border: 1px solid rgba(31, 79, 163, 0.26) !important;

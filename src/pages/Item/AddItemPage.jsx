@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { CircleMarker, MapContainer, TileLayer, useMap, useMapEvents } from "react-leaflet";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { UI_TEXT } from "../../Components/ItemUi/textFormat";
 import { THEME } from "./itemTheme";
 import FieldBlock from "../../Components/ItemUi/FieldBlock";
 import PreviewLine from "../../Components/ItemUi/PreviewLine";
 import "./ItemPages.css";
+import { useAuth } from "../../context/AuthContext";
 
 const CATEGORY_OPTIONS = [
   { value: "", label: "یک دسته‌بندی انتخاب کنید..." },
@@ -147,6 +148,7 @@ function LocationPicker({ bounds, markerPosition, onPick }) {
 }
 
 export default function AddItemPage() {
+  const { isLoggedIn, user } = useAuth();
   const [type, setType] = useState("lost");
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
@@ -185,14 +187,18 @@ export default function AddItemPage() {
     () => (type === "lost" ? "گمشده" : "پیداشده"),
     [type]
   );
+  const profileValue = useMemo(() => {
+    if (!isLoggedIn) return profile;
+    return user?.name?.trim() || user?.email?.trim() || profile;
+  }, [isLoggedIn, profile, user?.email, user?.name]);
 
   const errors = useMemo(() => {
     const e = {};
     if (!name.trim()) e.name = "نام شیء را وارد کنید.";
     if (!category) e.category = "یک دسته‌بندی انتخاب کنید.";
-    if (!profile.trim()) e.profile = "پروفایل مرتبط را وارد کنید.";
+    if (!profileValue.trim()) e.profile = "پروفایل مرتبط را وارد کنید.";
     return e;
-  }, [name, category, profile]);
+  }, [name, category, profileValue]);
 
   const isValid = Object.keys(errors).length === 0;
   const parsedX = x.trim() === "" ? Number.NaN : Number(x);
@@ -210,14 +216,14 @@ export default function AddItemPage() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!isValid || locationError) return;
+    if (!isLoggedIn || !isValid || locationError) return;
 
     const createdAt = new Date();
     const payload = {
       type,
       name: name.trim(),
       category,
-      relatedProfile: profile.trim(),
+      relatedProfile: profileValue.trim(),
       createdAt: createdAt.toISOString(),
       notes: notes.trim() || null,
       x: hasCoords ? clamped.lat : null,
@@ -242,6 +248,8 @@ export default function AddItemPage() {
     return `${clamped.lat.toFixed(6)} , ${clamped.lng.toFixed(6)}`;
   }, [clamped.lat, clamped.lng, hasCoords]);
 
+  const isLocked = !isLoggedIn;
+
   return (
     <div
       {...UI_TEXT.page}
@@ -249,34 +257,38 @@ export default function AddItemPage() {
       style={{ ...UI_TEXT.page.style, color: THEME.text }}
     >
       <div className="item-page__content item-add item-add__content">
-        <div className="mx-auto item-add__wrapper">
-          <header className="text-center mb-4 item-add__header">
-            <h1 className="h3 mb-2">افزودن شیء {typeLabel}</h1>
-            <div className="text-muted">
-              فرم ایجاد یک رکورد جدید برای سامانه اشیای گمشده و پیداشده
-            </div>
-          </header>
+        <div className={`item-add__gate ${isLocked ? "is-locked" : ""}`}>
+          <div className="item-add__blur">
+            <div className="mx-auto item-add__wrapper">
+              <div className="card shadow-sm item-add__form-card">
+                <div className="item-add__card-header">
+                  <header className="text-center mb-4 item-add__header">
+                    <h1 className="h3 mb-2">افزودن شیء {typeLabel}</h1>
+                    <div className="text-muted">
+                      فرم ایجاد یک رکورد جدید برای سامانه اشیای گمشده و پیداشده
+                    </div>
+                  </header>
 
-          <div className="card shadow-sm item-add__form-card">
-            <div className="card-body">
-              <div className="item-add__clock-inline">
-                <span className="badge d-inline-flex align-items-center gap-2 item-add__clock-badge">
-                  <Icon name="clock" />
-                  <span>
-                    زمان جاری:{" "}
-                    <span {...UI_TEXT.ltrInline}>
-                      {now.toLocaleString(undefined, {
-                        year: "numeric",
-                        month: "2-digit",
-                        day: "2-digit",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        second: "2-digit",
-                      })}
+                  <div className="item-add__clock-inline">
+                    <span className="badge d-inline-flex align-items-center gap-2 item-add__clock-badge">
+                      <Icon name="clock" />
+                      <span>
+                        زمان جاری:{" "}
+                        <span {...UI_TEXT.ltrInline}>
+                          {now.toLocaleString(undefined, {
+                            year: "numeric",
+                            month: "2-digit",
+                            day: "2-digit",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            second: "2-digit",
+                          })}
+                        </span>
+                      </span>
                     </span>
-                  </span>
-                </span>
-              </div>
+                  </div>
+                </div>
+                <div className="card-body">
               <form onSubmit={handleSubmit} noValidate>
                 <FieldBlock
                   title="نوع"
@@ -369,7 +381,9 @@ export default function AddItemPage() {
                   hint={
                     errors.profile
                       ? null
-                      : "در نسخه‌های بعدی می‌توان این فیلد را از کاربر لاگین‌شده پر کرد."
+                      : isLoggedIn
+                        ? "این فیلد از حساب کاربری شما پر شده است."
+                        : "در نسخه‌های بعدی می‌توان این فیلد را از کاربر لاگین‌شده پر کرد."
                   }
                   error={errors.profile}
                 >
@@ -377,12 +391,16 @@ export default function AddItemPage() {
                     id="profile"
                     className={`form-control ${UI_TEXT.field.className} ${
                       errors.profile ? "is-invalid" : ""
-                    }`}
+                    } ${isLoggedIn ? "item-add__profile-locked" : ""}`}
                     style={UI_TEXT.field.style}
-                    value={profile}
-                    onChange={(e) => setProfile(e.target.value)}
+                    value={profileValue}
+                    onChange={(e) => {
+                      if (isLoggedIn) return;
+                      setProfile(e.target.value);
+                    }}
                     placeholder="مثلاً: نام کاربری یا ایمیل"
                     autoComplete="off"
+                    readOnly={isLoggedIn}
                   />
                 </FieldBlock>
 
@@ -393,33 +411,39 @@ export default function AddItemPage() {
                   error={locationError}
                 >
                   <div className="item-add__map">
-                    <MapContainer
-                      center={mapCenter}
-                      zoom={16}
-                      minZoom={16}
-                      maxZoom={18}
-                      maxBounds={MAP_BOUNDS}
-                      maxBoundsViscosity={1}
-                      doubleClickZoom={false}
-                      style={{ width: "100%", height: "100%" }}
-                    >
-                      <TileLayer url={TILE_URL} attribution={TILE_ATTR} />
-                      <MapViewUpdater center={mapCenter} />
-                      <LocationPicker
-                        bounds={MAP_BOUNDS}
-                        markerPosition={markerPosition}
-                        onPick={({ x: nextX, y: nextY }) => {
-                          const nextClamped = clampToBounds(nextX, nextY, MAP_BOUNDS);
-                          setX(nextClamped.lat.toFixed(6));
-                          setY(nextClamped.lng.toFixed(6));
-                        }}
-                      />
-                    </MapContainer>
+                    {isLocked ? (
+                      <div className="item-add__map-lock">
+                        برای انتخاب موقعیت، ابتدا وارد حساب شوید.
+                      </div>
+                    ) : (
+                      <MapContainer
+                        center={mapCenter}
+                        zoom={16}
+                        minZoom={16}
+                        maxZoom={18}
+                        maxBounds={MAP_BOUNDS}
+                        maxBoundsViscosity={1}
+                        doubleClickZoom={false}
+                        style={{ width: "100%", height: "100%" }}
+                      >
+                        <TileLayer url={TILE_URL} attribution={TILE_ATTR} />
+                        <MapViewUpdater center={mapCenter} />
+                        <LocationPicker
+                          bounds={MAP_BOUNDS}
+                          markerPosition={markerPosition}
+                          onPick={({ x: nextX, y: nextY }) => {
+                            const nextClamped = clampToBounds(nextX, nextY, MAP_BOUNDS);
+                            setX(nextClamped.lat.toFixed(6));
+                            setY(nextClamped.lng.toFixed(6));
+                          }}
+                        />
+                      </MapContainer>
+                    )}
                   </div>
                   <div className="row g-3 mt-1">
-                    <div className="col-12 col-md-6">
+                    <div className="col-6">
                       <label htmlFor="coordX" className="form-label">
-                        x (Latitude)
+                        عرض جغرافیایی
                       </label>
                       <input
                         id="coordX"
@@ -439,9 +463,9 @@ export default function AddItemPage() {
                         placeholder="مثلاً 35.702831"
                       />
                     </div>
-                    <div className="col-12 col-md-6">
+                    <div className="col-6">
                       <label htmlFor="coordY" className="form-label">
-                        y (Longitude)
+                        طول جغرافیایی
                       </label>
                       <input
                         id="coordY"
@@ -486,7 +510,7 @@ export default function AddItemPage() {
                   <button
                     type="submit"
                     className="btn px-4 item-add__submit-btn"
-                    disabled={!isValid}
+                    disabled={!isValid || locationError || isLocked}
                   >
                     ثبت شیء {typeLabel}
                   </button>
@@ -529,13 +553,28 @@ export default function AddItemPage() {
               <div className="border-top item-add__divider" />
               <PreviewLine label="دسته‌بندی" value={categoryLabel} />
               <div className="border-top item-add__divider" />
-              <PreviewLine label="پروفایل مرتبط" value={profile.trim() || "—"} />
+              <PreviewLine label="پروفایل مرتبط" value={profileValue.trim() || "—"} />
               <div className="border-top item-add__divider" />
               <PreviewLine label="مکان" value={locationLabel} />
               <div className="border-top item-add__divider" />
               <PreviewLine label="توضیحات" value={notes.trim() || "—"} />
             </div>
           </div>
+            </div>
+          </div>
+          {isLocked && (
+            <div className="item-add__lock">
+              <div className="item-add__lock-card">
+                <div className="item-add__lock-title">برای ادامه وارد شوید</div>
+                <div className="item-add__lock-text">
+                  برای ثبت شیء جدید، ابتدا وارد حساب کاربری خود شوید.
+                </div>
+                <Link to="/login" className="btn item-add__lock-btn" >
+                  ورود به حساب
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
