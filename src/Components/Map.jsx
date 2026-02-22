@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   MapContainer,
   TileLayer,
@@ -36,20 +37,8 @@ function getCategoryLabel(item) {
 }
 
 /* ================== config ================== */
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
 const TILE_URL = import.meta.env.VITE_MAP_TILE_URL;
 const TILE_ATTR = import.meta.env.VITE_MAP_ATTRIBUTION;
-
-/* ================== api ================== */
-async function createLostItem(item) {
-  const res = await fetch(`${API_BASE}/lost-items`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(item),
-  });
-  if (!res.ok) throw new Error("Failed to create item");
-  return res.json();
-}
 
 /* ================== helpers ================== */
 function markerIcon(category) {
@@ -65,24 +54,15 @@ function markerIcon(category) {
 }
 
 /* ================== map helpers ================== */
-function AddMarker({ bounds, onAdd }) {
+function AddMarker({ bounds, onPick }) {
   useMapEvents({
-    async click(e) {
+    dblclick(e) {
       const { lat, lng } = e.latlng;
       const [[south, west], [north, east]] = bounds;
 
       if (lat < south || lat > north || lng < west || lng > east) return;
 
-      const item = {
-        name: "Item",
-        x: lat,
-        y: lng,
-        category: "other",
-        timestamp: new Date().toISOString(),
-      };
-
-      const saved = await createLostItem(item);
-      onAdd(saved);
+      onPick({ x: lat, y: lng });
     },
   });
 
@@ -165,6 +145,7 @@ function Sidebar({
 export default function LostAndFoundMap() {
   const center = [35.702831, 51.3516];
   const delta = 0.0055;
+  const navigate = useNavigate();
 
   const bounds = [
     [center[0] - delta, center[1] - delta],
@@ -210,6 +191,11 @@ export default function LostAndFoundMap() {
   };
 
   const selectedItem = items.find((i) => i.id === selectedId);
+  const handlePickLocation = ({ x, y }) => {
+    const lat = Number(x.toFixed(6));
+    const lng = Number(y.toFixed(6));
+    navigate(`/add?x=${lat}&y=${lng}`);
+  };
 
   return (
     <div className="app-container">
@@ -224,7 +210,7 @@ export default function LostAndFoundMap() {
       <div className="map-wrapper">
         <div className="map-toolbar">
           <div className="map-title">نقشه اشیاء گم‌شده</div>
-          <div className="map-hint">برای افزودن، روی نقشه کلیک کنید</div>
+          <div className="map-hint">برای افزودن، دوبار روی نقشه کلیک کنید</div>
         </div>
         <MapContainer
           center={center}
@@ -232,6 +218,7 @@ export default function LostAndFoundMap() {
           minZoom={16}
           maxZoom={18}
           maxBounds={bounds}
+          doubleClickZoom={false}
           style={{ width: "100%", height: "100%" }}
         >
           <TileLayer url={TILE_URL} attribution={TILE_ATTR} />
@@ -291,12 +278,7 @@ export default function LostAndFoundMap() {
               ))}
           </MarkerClusterGroup>
 
-          <AddMarker
-            bounds={bounds}
-            onAdd={(item) =>
-              setItems((prev) => [...prev, item])
-            }
-          />
+          <AddMarker bounds={bounds} onPick={handlePickLocation} />
 
           {selectedItem && <FlyToMarker item={selectedItem} />}
         </MapContainer>

@@ -11,7 +11,8 @@
   --text-main: #0f172a;
   --text-muted: #5b6b7f;
   --border-soft: rgba(15, 23, 42, 0.12);
-  font-family: "Vazirmatn", system-ui, Avenir, Helvetica, Arial, sans-serif;
+  --font-sans: "Vazirmatn", "Inter", system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: var(--font-sans);
   line-height: 1.5;
   font-weight: 400;
 
@@ -39,6 +40,30 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+}
+
+body {
+  font-family: var(--font-sans);
+}
+
+button,
+input,
+select,
+textarea,
+option {
+  font-family: inherit;
+}
+
+input::placeholder,
+textarea::placeholder {
+  font-family: inherit;
+}
+
+.leaflet-container,
+.leaflet-control,
+.leaflet-popup,
+.leaflet-tooltip {
+  font-family: var(--font-sans);
 }
 
 #root {

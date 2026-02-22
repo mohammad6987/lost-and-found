@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { CircleMarker, MapContainer, TileLayer, useMap, useMapEvents } from "react-leaflet";
+import { useSearchParams } from "react-router-dom";
 import { UI_TEXT } from "../../Components/ItemUi/textFormat";
 import { THEME } from "./itemTheme";
 import FieldBlock from "../../Components/ItemUi/FieldBlock";
@@ -15,6 +17,15 @@ const CATEGORY_OPTIONS = [
   { value: "laptops", label: "لپ‌تاپ" },
   { value: "other", label: "سایر" },
 ];
+
+const DEFAULT_CENTER = [35.702831, 51.3516];
+const MAP_DELTA = 0.0055;
+const MAP_BOUNDS = [
+  [DEFAULT_CENTER[0] - MAP_DELTA, DEFAULT_CENTER[1] - MAP_DELTA],
+  [DEFAULT_CENTER[0] + MAP_DELTA, DEFAULT_CENTER[1] + MAP_DELTA],
+];
+const TILE_URL = import.meta.env.VITE_MAP_TILE_URL;
+const TILE_ATTR = import.meta.env.VITE_MAP_ATTRIBUTION;
 
 function Icon({ name }) {
   const common = { width: 18, height: 18, viewBox: "0 0 24 24", fill: "none" };
@@ -94,18 +105,81 @@ function Icon({ name }) {
   }
 }
 
+function clampToBounds(lat, lng, bounds) {
+  const [[south, west], [north, east]] = bounds;
+  return {
+    lat: Math.min(Math.max(lat, south), north),
+    lng: Math.min(Math.max(lng, west), east),
+  };
+}
+
+function isWithinBounds(lat, lng, bounds) {
+  const [[south, west], [north, east]] = bounds;
+  return lat >= south && lat <= north && lng >= west && lng <= east;
+}
+
+function MapViewUpdater({ center }) {
+  const map = useMap();
+
+  useEffect(() => {
+    map.setView(center, map.getZoom(), { animate: true });
+  }, [center, map]);
+
+  return null;
+}
+
+function LocationPicker({ bounds, markerPosition, onPick }) {
+  useMapEvents({
+    click(e) {
+      const { lat, lng } = e.latlng;
+      if (!isWithinBounds(lat, lng, bounds)) return;
+      onPick({ x: lat, y: lng });
+    },
+  });
+
+  return markerPosition ? (
+    <CircleMarker
+      center={markerPosition}
+      radius={7}
+      pathOptions={{ color: "#1f4fa3", fillColor: "#3b82f6", fillOpacity: 0.85 }}
+    />
+  ) : null;
+}
+
 export default function AddItemPage() {
   const [type, setType] = useState("lost");
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
   const [profile, setProfile] = useState("");
   const [notes, setNotes] = useState("");
+  const [x, setX] = useState("");
+  const [y, setY] = useState("");
+  const [searchParams] = useSearchParams();
 
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    const xParam = searchParams.get("x");
+    const yParam = searchParams.get("y");
+
+    if (xParam !== null && yParam !== null) {
+      const nextX = Number(xParam);
+      const nextY = Number(yParam);
+      if (Number.isFinite(nextX) && Number.isFinite(nextY)) {
+        const nextClamped = clampToBounds(nextX, nextY, MAP_BOUNDS);
+        setX(nextClamped.lat.toFixed(6));
+        setY(nextClamped.lng.toFixed(6));
+        return;
+      }
+    }
+
+    if (xParam !== null) setX(xParam);
+    if (yParam !== null) setY(yParam);
+  }, [searchParams.toString()]);
 
   const typeLabel = useMemo(
     () => (type === "lost" ? "گمشده" : "پیداشده"),
@@ -121,10 +195,22 @@ export default function AddItemPage() {
   }, [name, category, profile]);
 
   const isValid = Object.keys(errors).length === 0;
+  const parsedX = x.trim() === "" ? Number.NaN : Number(x);
+  const parsedY = y.trim() === "" ? Number.NaN : Number(y);
+  const hasCoords = Number.isFinite(parsedX) && Number.isFinite(parsedY);
+  const withinBounds = hasCoords
+    ? isWithinBounds(parsedX, parsedY, MAP_BOUNDS)
+    : true;
+  const clamped = hasCoords
+    ? clampToBounds(parsedX, parsedY, MAP_BOUNDS)
+    : { lat: DEFAULT_CENTER[0], lng: DEFAULT_CENTER[1] };
+  const mapCenter = hasCoords ? [clamped.lat, clamped.lng] : DEFAULT_CENTER;
+  const markerPosition = hasCoords ? [clamped.lat, clamped.lng] : null;
+  const locationError = hasCoords && !withinBounds ? "مختصات باید داخل محدوده دانشگاه باشد." : null;
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!isValid) return;
+    if (!isValid || locationError) return;
 
     const createdAt = new Date();
     const payload = {
@@ -134,6 +220,8 @@ export default function AddItemPage() {
       relatedProfile: profile.trim(),
       createdAt: createdAt.toISOString(),
       notes: notes.trim() || null,
+      x: hasCoords ? clamped.lat : null,
+      y: hasCoords ? clamped.lng : null,
     };
 
     console.log("Submitting new item:", payload);
@@ -142,11 +230,17 @@ export default function AddItemPage() {
     setCategory("");
     setProfile("");
     setNotes("");
+    setX("");
+    setY("");
   }
 
   const categoryLabel =
     CATEGORY_OPTIONS.find((c) => c.value === category)?.label ||
     (category ? category : "—");
+  const locationLabel = useMemo(() => {
+    if (!hasCoords) return "—";
+    return `${clamped.lat.toFixed(6)} , ${clamped.lng.toFixed(6)}`;
+  }, [clamped.lat, clamped.lng, hasCoords]);
 
   return (
     <div
@@ -295,11 +389,77 @@ export default function AddItemPage() {
                 <FieldBlock
                   title="مکان (در محدوده دانشگاه)"
                   icon={<Icon name="map" />}
+                  hint="با کلیک روی نقشه مقداردهی می‌شود و قابل ویرایش است."
+                  error={locationError}
                 >
-                  <div className="rounded p-3 item-add__location-note" style={UI_TEXT.page.style}>
-                    <div className="fw-semibold">به‌زودی</div>
-                    <div className="text-muted">
-                      پس از اضافه شدن قابلیت نقشه، این بخش فعال خواهد شد.
+                  <div className="item-add__map">
+                    <MapContainer
+                      center={mapCenter}
+                      zoom={16}
+                      minZoom={16}
+                      maxZoom={18}
+                      maxBounds={MAP_BOUNDS}
+                      maxBoundsViscosity={1}
+                      doubleClickZoom={false}
+                      style={{ width: "100%", height: "100%" }}
+                    >
+                      <TileLayer url={TILE_URL} attribution={TILE_ATTR} />
+                      <MapViewUpdater center={mapCenter} />
+                      <LocationPicker
+                        bounds={MAP_BOUNDS}
+                        markerPosition={markerPosition}
+                        onPick={({ x: nextX, y: nextY }) => {
+                          const nextClamped = clampToBounds(nextX, nextY, MAP_BOUNDS);
+                          setX(nextClamped.lat.toFixed(6));
+                          setY(nextClamped.lng.toFixed(6));
+                        }}
+                      />
+                    </MapContainer>
+                  </div>
+                  <div className="row g-3 mt-1">
+                    <div className="col-12 col-md-6">
+                      <label htmlFor="coordX" className="form-label">
+                        x (Latitude)
+                      </label>
+                      <input
+                        id="coordX"
+                        type="number"
+                        step="0.000001"
+                        className={`form-control ${UI_TEXT.field.className}`}
+                        style={UI_TEXT.field.style}
+                        value={x}
+                        onChange={(e) => setX(e.target.value)}
+                        onBlur={() => {
+                          if (!hasCoords) return;
+                          if (!withinBounds) {
+                            setX(clamped.lat.toFixed(6));
+                            setY(clamped.lng.toFixed(6));
+                          }
+                        }}
+                        placeholder="مثلاً 35.702831"
+                      />
+                    </div>
+                    <div className="col-12 col-md-6">
+                      <label htmlFor="coordY" className="form-label">
+                        y (Longitude)
+                      </label>
+                      <input
+                        id="coordY"
+                        type="number"
+                        step="0.000001"
+                        className={`form-control ${UI_TEXT.field.className}`}
+                        style={UI_TEXT.field.style}
+                        value={y}
+                        onChange={(e) => setY(e.target.value)}
+                        onBlur={() => {
+                          if (!hasCoords) return;
+                          if (!withinBounds) {
+                            setX(clamped.lat.toFixed(6));
+                            setY(clamped.lng.toFixed(6));
+                          }
+                        }}
+                        placeholder="مثلاً 51.351600"
+                      />
                     </div>
                   </div>
                 </FieldBlock>
@@ -339,6 +499,8 @@ export default function AddItemPage() {
                       setCategory("");
                       setProfile("");
                       setNotes("");
+                      setX("");
+                      setY("");
                     }}
                   >
                     پاک‌سازی
@@ -369,7 +531,7 @@ export default function AddItemPage() {
               <div className="border-top item-add__divider" />
               <PreviewLine label="پروفایل مرتبط" value={profile.trim() || "—"} />
               <div className="border-top item-add__divider" />
-              <PreviewLine label="مکان" value="به‌زودی (قابلیت نقشه)" />
+              <PreviewLine label="مکان" value={locationLabel} />
               <div className="border-top item-add__divider" />
               <PreviewLine label="توضیحات" value={notes.trim() || "—"} />
             </div>
