@@ -50,7 +50,11 @@ function ItemCard({ item }) {
   });
 
   return (
-    <Link to={`/items/${item.id}`} className="home-item-card">
+    <Link
+      to={`/items/${item.id}`}
+      state={{ item }}
+      className="home-item-card"
+    >
       <div className="item-icon" style={{ backgroundColor: category.color }}>
         {category.icon}
       </div>

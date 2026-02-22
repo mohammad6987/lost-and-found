@@ -10,6 +10,7 @@ import AddItemPage from "./pages/Item/AddItemPage";
 import RecentLostItemsPage from "./pages/Item/RecentLostItemsPage";
 import EditItemPage from "./pages/Item/EditItemPage";
 import ChatPage from "./pages/Item/ChatPage";
+import ItemDetailsPage from "./pages/Item/ItemDetailsPage";
 import AppLayout from './Components/AppLayout';
 
 import Terms from './pages/Terms/Terms'
@@ -32,6 +33,7 @@ function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/add" element={<AddItemPage />} />
           <Route path="/items" element={<RecentLostItemsPage />} />
+          <Route path="/items/:id" element={<ItemDetailsPage />} />
           <Route path="/items/:id/edit" element={<EditItemPage />} />
           <Route path="/chat/:username" element={<ChatPage />} />
         </Route>

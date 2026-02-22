@@ -103,6 +103,10 @@ export default function RecentLostItemsPage() {
     nav(`/chat/${item.relatedProfile}`, { state: { itemId: item.id } });
   }
 
+  function goDetails(item) {
+    nav(`/items/${item.id}`, { state: { item } });
+  }
+
   const imageSrc = selected
     ? getImageSrc(selected.image || selected.raw?.image || "")
     : "";
@@ -228,6 +232,12 @@ export default function RecentLostItemsPage() {
               </div>
 
               <div className="d-flex justify-content-end gap-2 mt-3">
+                <button
+                  className="btn btn-outline-secondary px-4"
+                  onClick={() => goDetails(selected)}
+                >
+                  مشاهده صفحه کامل
+                </button>
                 {selected.relatedProfile === currentUserEmail ? (
                   <button
                     className="btn px-4"
