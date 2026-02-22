@@ -15,6 +15,7 @@ export function mapProductToItem(product) {
     category: normalizeCategoryName(product?.categoryName),
     categoryLabel: product?.categoryName || "سایر",
     description: product?.description || "",
+    image: product?.image || null,
     x: latitude,
     y: longitude,
     locationText:

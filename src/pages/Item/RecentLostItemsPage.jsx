@@ -49,6 +49,21 @@ function fmt(tsIso) {
   }
 }
 
+function getImageSrc(value) {
+  if (!value || typeof value !== "string") return "";
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  if (trimmed.startsWith("data:image/")) return trimmed;
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed;
+  if (trimmed.startsWith("/") && trimmed.length < 200) return trimmed;
+
+  let mime = "image/jpeg";
+  if (trimmed.startsWith("iVBOR")) mime = "image/png";
+  if (trimmed.startsWith("R0lGOD")) mime = "image/gif";
+  if (trimmed.startsWith("UklGR")) mime = "image/webp";
+  return `data:${mime};base64,${trimmed}`;
+}
+
 export default function RecentLostItemsPage() {
   const nav = useNavigate();
   const [selected, setSelected] = useState(null);
@@ -87,6 +102,10 @@ export default function RecentLostItemsPage() {
   function goChat(item) {
     nav(`/chat/${item.relatedProfile}`, { state: { itemId: item.id } });
   }
+
+  const imageSrc = selected
+    ? getImageSrc(selected.image || selected.raw?.image || "")
+    : "";
 
   return (
     <div
@@ -195,6 +214,14 @@ export default function RecentLostItemsPage() {
               <PreviewLine label="مکان" value="به‌زودی (قابلیت نقشه)" />
               <div className="border-top" />
               <PreviewLine label="توضیحات" value={selected.notes?.trim() ? selected.notes : "—"} />
+              {imageSrc ? (
+                <>
+                  <div className="border-top" />
+                  <div className="item-detail__image">
+                    <img src={imageSrc} alt={selected.name || "item"} />
+                  </div>
+                </>
+              ) : null}
 
               <div className="d-flex justify-content-center gap-2 mt-3">
                 {selected.relatedProfile === currentUserEmail ? (

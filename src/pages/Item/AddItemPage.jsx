@@ -154,6 +154,8 @@ export default function AddItemPage() {
   const [category, setCategory] = useState("");
   const [profile, setProfile] = useState("");
   const [notes, setNotes] = useState("");
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState("");
   const [x, setX] = useState("");
   const [y, setY] = useState("");
   const [searchParams] = useSearchParams();
@@ -163,6 +165,16 @@ export default function AddItemPage() {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    if (!imageFile) {
+      setImagePreview("");
+      return;
+    }
+    const url = URL.createObjectURL(imageFile);
+    setImagePreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [imageFile]);
 
   useEffect(() => {
     const xParam = searchParams.get("x");
@@ -228,6 +240,9 @@ export default function AddItemPage() {
       notes: notes.trim() || null,
       x: hasCoords ? clamped.lat : null,
       y: hasCoords ? clamped.lng : null,
+      image: imageFile
+        ? { name: imageFile.name, size: imageFile.size, type: imageFile.type }
+        : null,
     };
 
     console.log("Submitting new item:", payload);
@@ -236,6 +251,8 @@ export default function AddItemPage() {
     setCategory("");
     setProfile("");
     setNotes("");
+    setImageFile(null);
+    setImagePreview("");
     setX("");
     setY("");
   }
@@ -489,6 +506,32 @@ export default function AddItemPage() {
                 </FieldBlock>
 
                 <FieldBlock
+                  title="تصویر (اختیاری)"
+                  icon={<Icon name="note" />}
+                  hint="فرمت‌های مجاز: JPG, PNG. حجم پیشنهادی کمتر از ۵ مگابایت."
+                >
+                  <div className="item-add__image-field">
+                    <input
+                      id="itemImage"
+                      type="file"
+                      accept="image/*"
+                      className={`form-control ${UI_TEXT.field.className} item-add__image-input`}
+                      style={UI_TEXT.field.style}
+                      disabled={isLocked}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] || null;
+                        setImageFile(file);
+                      }}
+                    />
+                    {imagePreview ? (
+                      <div className="item-add__image-preview">
+                        <img src={imagePreview} alt="پیش‌نمایش تصویر" />
+                      </div>
+                    ) : null}
+                  </div>
+                </FieldBlock>
+
+                <FieldBlock
                   title="توضیحات (اختیاری)"
                   icon={<Icon name="note" />}
                   htmlFor="notes"
@@ -523,6 +566,8 @@ export default function AddItemPage() {
                       setCategory("");
                       setProfile("");
                       setNotes("");
+                      setImageFile(null);
+                      setImagePreview("");
                       setX("");
                       setY("");
                     }}
@@ -556,6 +601,11 @@ export default function AddItemPage() {
               <PreviewLine label="پروفایل مرتبط" value={profileValue.trim() || "—"} />
               <div className="border-top item-add__divider" />
               <PreviewLine label="مکان" value={locationLabel} />
+              <div className="border-top item-add__divider" />
+              <PreviewLine
+                label="تصویر"
+                value={imageFile ? imageFile.name : "—"}
+              />
               <div className="border-top item-add__divider" />
               <PreviewLine label="توضیحات" value={notes.trim() || "—"} />
             </div>

@@ -17,9 +17,7 @@ const USE_DEV_PROXY = import.meta.env.DEV && import.meta.env.VITE_USE_DEV_PROXY 
 const API_BASE_URL = USE_DEV_PROXY
   ? "/auth-api"
   : import.meta.env.VITE_API_BASE_URL || "https://sharif-lostfound.liara.run/";
-const PRODUCTS_API_BASE_URL = USE_DEV_PROXY
-  ? "/products-api"
-  : import.meta.env.VITE_PRODUCTS_API_BASE_URL ||
+const PRODUCTS_API_BASE_URL = USE_DEV_PROXY ? "/products-api": import.meta.env.VITE_PRODUCTS_API_BASE_URL ||
     "https://sharif-lostfound.liara.run";
 
 // Track ongoing refresh to prevent multiple simultaneous refreshes
