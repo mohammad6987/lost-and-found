@@ -5,6 +5,8 @@ import {
   TileLayer,
   Marker,
   Popup,
+  CircleMarker,
+  Tooltip,
   useMapEvents,
   useMap,
 } from "react-leaflet";
@@ -155,6 +157,9 @@ export default function LostAndFoundMap() {
   const [items, setItems] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [selectedCategories, setSelectedCategories] = useState([]);
+  const [userLocation, setUserLocation] = useState(null);
+  const [userOutOfBounds, setUserOutOfBounds] = useState(false);
+  const hasShownBoundsAlert = useRef(false);
 
   const markerRefs = useRef({});
 
@@ -174,6 +179,33 @@ export default function LostAndFoundMap() {
         );
       })
       .catch((err) => console.error(err));
+  }, []);
+
+  const isInBounds = (lat, lng) => {
+    const [[south, west], [north, east]] = bounds;
+    return lat >= south && lat <= north && lng >= west && lng <= east;
+  };
+
+  useEffect(() => {
+    if (!("geolocation" in navigator)){
+      window.alert( " موقعیت شما قابل دسترسی نیست!");
+      return;}
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setUserLocation({ lat: latitude, lng: longitude });
+        const out = !isInBounds(latitude, longitude);
+        setUserOutOfBounds(out);
+        if (out && !hasShownBoundsAlert.current) {
+          hasShownBoundsAlert.current = true;
+          window.alert("موقعیت شما خارج از محدوده نقشه است.");
+        }
+      },
+      (err) => {
+        console.warn("Geolocation error:", err);
+      },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
   }, []);
 
   useEffect(() => {
@@ -277,6 +309,28 @@ export default function LostAndFoundMap() {
                 </Marker>
               ))}
           </MarkerClusterGroup>
+
+          {userOutOfBounds ? (
+            <Popup position={center}>
+              موقعیت شما خارج از محدوده نقشه است.
+            </Popup>
+          ) : null}
+
+          {userLocation && isInBounds(userLocation.lat, userLocation.lng) ? (
+            <CircleMarker
+              center={[userLocation.lat, userLocation.lng]}
+              radius={7}
+              pathOptions={{
+                color: "#1d4ed8",
+                fillColor: "#60a5fa",
+                fillOpacity: 0.9,
+              }}
+            >
+              <Tooltip direction="top" offset={[0, -6]}>
+                موقعیت شما
+              </Tooltip>
+            </CircleMarker>
+          ) : null}
 
           <AddMarker bounds={bounds} onPick={handlePickLocation} />
 
