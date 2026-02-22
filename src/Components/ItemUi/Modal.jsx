@@ -11,12 +11,13 @@ export default function Modal({ title, onClose, children }) {
         ...UI_TEXT.page.style,
         position: "fixed",
         inset: 0,
-        background: "rgba(0,0,0,0.35)",
+        background: "rgba(15, 23, 42, 0.38)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: 16,
-        zIndex: 9999,
+        padding: "16px 24px",
+        zIndex: 1100,
+        overflowY: "auto",
       }}
       onClick={onClose}
     >
@@ -24,16 +25,15 @@ export default function Modal({ title, onClose, children }) {
         className="card shadow"
         style={{
           width: "100%",
-          maxWidth: 760,
+          maxWidth: 980,
+          maxHeight: "calc(100vh - 32px)",
           borderColor: THEME.border,
+          overflow: "hidden",
         }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="card-header bg-white d-flex align-items-center justify-content-between">
           <strong>{title}</strong>
-          <button className="btn btn-sm btn-outline-secondary" onClick={onClose}>
-            بستن
-          </button>
         </div>
         <div className="card-body">{children}</div>
       </div>

@@ -1,3 +1,7 @@
+:root {
+  --app-footer-height: 120px;
+}
+
 .app-footer {
   background: linear-gradient(
     135deg,
@@ -7,6 +11,7 @@
   backdrop-filter: blur(12px);
   border-top: 1px solid rgba(255, 255, 255, 0.18);
   padding: 32px 24px;
+  min-height: var(--app-footer-height);
   width: 100vw;
   margin-inline: calc(50% - 50vw);
 }

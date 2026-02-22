@@ -193,37 +193,41 @@ export default function RecentLostItemsPage() {
 
           {selected ? (
             <Modal title="جزئیات شیء" onClose={closeModal}>
-              <div className="border-top" />
-              <PreviewLine label="نوع" value={selected.type === "lost" ? "گمشده" : "پیداشده"} />
-              <div className="border-top" />
-              <PreviewLine label="نام" value={selected.name || "—"} />
-              <div className="border-top" />
-              <PreviewLine
-                label="دسته‌بندی"
-                value={
-                  CATEGORY_LABELS[selected.category] ||
-                  selected.categoryLabel ||
-                  "—"
-                }
-              />
-              <div className="border-top" />
-              <PreviewLine label="پروفایل مرتبط" value={selected.relatedProfile || "—"} />
-              <div className="border-top" />
-              <PreviewLine label="زمان ثبت" value={<span {...UI_TEXT.ltrInline}>{fmt(selected.createdAt)}</span>} />
-              <div className="border-top" />
-              <PreviewLine label="مکان" value="به‌زودی (قابلیت نقشه)" />
-              <div className="border-top" />
-              <PreviewLine label="توضیحات" value={selected.notes?.trim() ? selected.notes : "—"} />
-              {imageSrc ? (
-                <>
-                  <div className="border-top" />
+              <div className="item-detail__grid">
+                {imageSrc ? (
                   <div className="item-detail__image">
                     <img src={imageSrc} alt={selected.name || "item"} />
                   </div>
-                </>
-              ) : null}
+                ) : (
+                  <div className="item-detail__image item-detail__image--empty">
+                    تصویر موجود نیست
+                  </div>
+                )}
+                <div className="item-detail__info">
+                  <PreviewLine label="نوع" value={selected.type === "lost" ? "گمشده" : "پیداشده"} />
+                  <div className="border-top" />
+                  <PreviewLine label="نام" value={selected.name || "—"} />
+                  <div className="border-top" />
+                  <PreviewLine
+                    label="دسته‌بندی"
+                    value={
+                      CATEGORY_LABELS[selected.category] ||
+                      selected.categoryLabel ||
+                      "—"
+                    }
+                  />
+                  <div className="border-top" />
+                  <PreviewLine label="پروفایل مرتبط" value={selected.relatedProfile || "—"} />
+                  <div className="border-top" />
+                  <PreviewLine label="زمان ثبت" value={<span {...UI_TEXT.ltrInline}>{fmt(selected.createdAt)}</span>} />
+                  <div className="border-top" />
+                  <PreviewLine label="مکان" value={selected.latitude} />
+                  <div className="border-top" />
+                  <PreviewLine label="توضیحات" value={selected.notes?.trim() ? selected.notes : "—"} />
+                </div>
+              </div>
 
-              <div className="d-flex justify-content-center gap-2 mt-3">
+              <div className="d-flex justify-content-end gap-2 mt-3">
                 {selected.relatedProfile === currentUserEmail ? (
                   <button
                     className="btn px-4"

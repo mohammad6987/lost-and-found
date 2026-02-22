@@ -371,7 +371,6 @@ export default function AddItemPage() {
                   title="دسته‌بندی"
                   icon={<Icon name="category" />}
                   htmlFor="category"
-                  hint={errors.category ? null : "بعداً این مورد به enum مشترک در کل پروژه تبدیل می‌شود."}
                   error={errors.category}
                 >
                   <select
@@ -585,7 +584,7 @@ export default function AddItemPage() {
                 <strong>پیش‌نمایش</strong>
 
                 <div className="text-muted small">
-                  این بخش نشان می‌دهد چه اطلاعاتی ذخیره خواهد شد (مکان فعلاً حذف شده است).
+                  این بخش نشان می‌دهد چه اطلاعاتی ذخیره خواهد شد .
                 </div>
               </div>
             </div>
