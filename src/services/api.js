@@ -400,7 +400,7 @@ export async function getProducts() {
     headers.Authorization = `Bearer ${accessToken}`;
   }
 
-  const tryEndpoints = [ "/api/items/"];
+  const tryEndpoints = [ "/api/items"];
   let lastError = null;
 
   for (const endpoint of tryEndpoints) {
