@@ -111,6 +111,60 @@
   border-bottom: 0;
 }
 
+.item-list__skeleton {
+  padding: 8px 0;
+}
+
+.item-skeleton-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(91, 91, 255, 0.12);
+}
+
+.item-skeleton-row:last-child {
+  border-bottom: 0;
+}
+
+.item-skeleton-block {
+  flex: 1;
+  display: grid;
+  gap: 8px;
+}
+
+.item-skeleton-line {
+  height: 12px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(91, 91, 255, 0.08), rgba(91, 91, 255, 0.22), rgba(91, 91, 255, 0.08));
+  animation: item-skeleton-pulse 1.2s ease-in-out infinite;
+}
+
+.item-skeleton-line.wide {
+  width: 60%;
+}
+
+.item-skeleton-pill {
+  width: 56px;
+  height: 24px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(91, 91, 255, 0.08), rgba(91, 91, 255, 0.22), rgba(91, 91, 255, 0.08));
+  animation: item-skeleton-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes item-skeleton-pulse {
+  0% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.6;
+  }
+}
+
 .item-page .list-group-item-action:hover {
   background: rgba(91, 91, 255, 0.08);
 }
@@ -439,8 +493,57 @@
   margin-bottom: 16px;
 }
 
+.item-edit__wrapper {
+  width: 100%;
+  max-width: 760px;
+}
+
+.item-edit__content {
+  padding: 0 !important;
+}
+
+.item-edit__header .h3 {
+  color: var(--brand-navy);
+  letter-spacing: -0.01em;
+}
+
+.item-edit__card-header {
+  padding: 20px 24px 0;
+  border-bottom: 1px solid rgba(31, 79, 163, 0.16);
+  background:
+    linear-gradient(165deg, rgba(255, 255, 255, 0.98) 0%, rgba(235, 243, 255, 0.95) 100%);
+  border-radius: 18px 18px 0 0;
+}
+
+.item-edit__actions {
+  margin-top: 6px;
+}
+
+.item-edit__submit-btn {
+  background: linear-gradient(135deg, var(--brand-blue) 0%, var(--brand-navy) 100%);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(11, 31, 58, 0.22);
+}
+
+.item-edit__submit-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 20px rgba(11, 31, 58, 0.26);
+}
+
+.item-edit__back-btn {
+  border-color: rgba(31, 79, 163, 0.36) !important;
+  color: var(--brand-blue);
+  background: rgba(244, 248, 255, 0.8);
+}
+
+.item-edit__back-btn:hover {
+  background: rgba(227, 237, 252, 0.9);
+}
+
 .item-add__form-card,
-.item-add__preview-card {
+.item-add__preview-card,
+.item-edit__form-card {
   border: 1px solid rgba(31, 79, 163, 0.2) !important;
   background:
     linear-gradient(165deg, rgba(255, 255, 255, 0.94) 0%, rgba(236, 243, 255, 0.9) 100%);
@@ -451,14 +554,20 @@
 
 .item-add .form-control,
 .item-add .form-select,
-.item-add textarea {
+.item-add textarea,
+.item-edit .form-control,
+.item-edit .form-select,
+.item-edit textarea {
   background: rgba(244, 248, 255, 0.94);
   border-color: rgba(31, 79, 163, 0.24);
 }
 
 .item-add .form-control:focus,
 .item-add .form-select:focus,
-.item-add textarea:focus {
+.item-add textarea:focus,
+.item-edit .form-control:focus,
+.item-edit .form-select:focus,
+.item-edit textarea:focus {
   border-color: rgba(31, 79, 163, 0.58);
   box-shadow: 0 0 0 4px rgba(31, 79, 163, 0.14);
   background: rgba(255, 255, 255, 0.98);

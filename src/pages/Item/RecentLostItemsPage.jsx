@@ -68,16 +68,19 @@ export default function RecentLostItemsPage() {
   const nav = useNavigate();
   const [selected, setSelected] = useState(null);
   const [items, setItems] = useState([]);
+  const [loadingItems, setLoadingItems] = useState(true);
   const { user } = useAuth();
   const currentUserEmail = user?.email || "";
 
   useEffect(() => {
+    setLoadingItems(true);
     fetchProductsAsItems()
       .then(setItems)
       .catch((err) => {
         console.error(err);
         setItems([]);
-      });
+      })
+      .finally(() => setLoadingItems(false));
   }, []);
 
   const lostItems = useMemo(() => {
@@ -128,7 +131,19 @@ export default function RecentLostItemsPage() {
 
           <div className="card shadow-sm" style={{ borderColor: THEME.border }}>
             <div className="card-body p-0">
-              {lostItems.length === 0 ? (
+              {loadingItems ? (
+                <div className="item-list__skeleton">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} className="item-skeleton-row">
+                      <div className="item-skeleton-block">
+                        <div className="item-skeleton-line wide" />
+                        <div className="item-skeleton-line" />
+                      </div>
+                      <div className="item-skeleton-pill" />
+                    </div>
+                  ))}
+                </div>
+              ) : lostItems.length === 0 ? (
                 <div className="p-4 text-center text-muted">موردی وجود ندارد.</div>
               ) : (
                 <div className="list-group list-group-flush">

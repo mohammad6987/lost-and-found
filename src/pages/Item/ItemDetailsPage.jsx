@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { MapContainer, Marker, TileLayer } from "react-leaflet";
+import { MapContainer, Marker } from "react-leaflet";
 import { UI_TEXT } from "../../Components/ItemUi/textFormat";
 import PreviewLine from "../../Components/ItemUi/PreviewLine";
 import { THEME } from "./itemTheme";
@@ -14,6 +14,7 @@ import {
 } from "../../services/comments";
 import { useAuth } from "../../context/AuthContext";
 import "./ItemPages.css";
+import CachedTileLayer from "../../Components/CachedTileLayer";
 
 const TILE_URL = import.meta.env.VITE_MAP_TILE_URL;
 const TILE_ATTR = import.meta.env.VITE_MAP_ATTRIBUTION;
@@ -173,7 +174,7 @@ export default function ItemDetailsPage() {
                         touchZoom={false}
                         style={{ width: "100%", height: "100%" }}
                       >
-                        <TileLayer url={TILE_URL} attribution={TILE_ATTR} />
+                        <CachedTileLayer url={TILE_URL} attribution={TILE_ATTR} />
                         <Marker position={[lat, lng]} />
                       </MapContainer>
                     ) : (

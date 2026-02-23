@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   MapContainer,
-  TileLayer,
   Marker,
   Popup,
   CircleMarker,
@@ -13,6 +12,7 @@ import {
 import MarkerClusterGroup from "react-leaflet-markercluster";
 import L from "leaflet";
 import { fetchProductsAsItems } from "../services/products";
+import CachedTileLayer from "./CachedTileLayer";
 
 import "leaflet/dist/leaflet.css";
 import "../assets/Map.css";
@@ -90,7 +90,24 @@ function Sidebar({
   onSelect,
   selectedCategories,
   toggleCategory,
+  loading,
 }) {
+  if (loading) {
+    return (
+      <aside className="sidebar" dir="rtl">
+        <h3>اشیای گم‌شده</h3>
+        <div className="map-skeleton">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="map-skeleton-row">
+              <div className="map-skeleton-line wide" />
+              <div className="map-skeleton-line" />
+            </div>
+          ))}
+        </div>
+      </aside>
+    );
+  }
+
   const categories = Array.from(
     new Set(items.map((item) => item.category).filter(Boolean))
   );
@@ -159,11 +176,13 @@ export default function LostAndFoundMap() {
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [userLocation, setUserLocation] = useState(null);
   const [userOutOfBounds, setUserOutOfBounds] = useState(false);
+  const [loadingItems, setLoadingItems] = useState(true);
   const hasShownBoundsAlert = useRef(false);
 
   const markerRefs = useRef({});
 
   useEffect(() => {
+    setLoadingItems(true);
     fetchProductsAsItems()
       .then((apiItems) => {
         const mapItems = apiItems.filter(
@@ -178,7 +197,8 @@ export default function LostAndFoundMap() {
           )
         );
       })
-      .catch((err) => console.error(err));
+      .catch((err) => console.error(err))
+      .finally(() => setLoadingItems(false));
   }, []);
 
   const isInBounds = (lat, lng) => {
@@ -237,6 +257,7 @@ export default function LostAndFoundMap() {
         onSelect={setSelectedId}
         selectedCategories={selectedCategories}
         toggleCategory={toggleCategory}
+        loading={loadingItems}
       />
 
       <div className="map-wrapper">
@@ -253,7 +274,7 @@ export default function LostAndFoundMap() {
           doubleClickZoom={false}
           style={{ width: "100%", height: "100%" }}
         >
-          <TileLayer url={TILE_URL} attribution={TILE_ATTR} />
+          <CachedTileLayer url={TILE_URL} attribution={TILE_ATTR} />
 
           <MarkerClusterGroup
             maxClusterRadius={50}
@@ -305,6 +326,17 @@ export default function LostAndFoundMap() {
                     {getCategoryLabel(item)}
                     <br />
                     {new Date(item.timestamp).toLocaleString("fa-IR")}
+                    <div className="map-popup-actions">
+                      <button
+                        type="button"
+                        className="map-popup-btn"
+                        onClick={() =>
+                          navigate(`/items/${item.id}`, { state: { item } })
+                        }
+                      >
+                        مشاهده جزئیات
+                      </button>
+                    </div>
                   </Popup>
                 </Marker>
               ))}

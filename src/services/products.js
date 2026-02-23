@@ -1,5 +1,32 @@
 import { getItemById, getProducts } from "./api";
 
+const ITEMS_CACHE_KEY = "lf_items_cache_v1";
+const ITEMS_TTL_MS = 60 * 1000;
+
+function loadItemsCache() {
+  try {
+    const raw = localStorage.getItem(ITEMS_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || !Array.isArray(parsed.items) || !parsed.ts) return null;
+    if (Date.now() - parsed.ts > ITEMS_TTL_MS) return null;
+    return parsed.items;
+  } catch {
+    return null;
+  }
+}
+
+function saveItemsCache(items) {
+  try {
+    localStorage.setItem(
+      ITEMS_CACHE_KEY,
+      JSON.stringify({ ts: Date.now(), items })
+    );
+  } catch {
+    // ignore cache errors
+  }
+}
+
 function normalizeCategoryName(categoryName) {
   if (!categoryName) return "other";
   return categoryName.toLowerCase().trim().replace(/\s+/g, "_");
@@ -62,6 +89,9 @@ export function mapProductToItem(product) {
 }
 
 export async function fetchProductsAsItems() {
+  const cached = loadItemsCache();
+  if (cached) return cached;
+
   const response = await getProducts();
   const products = Array.isArray(response?.data)
     ? response.data
@@ -69,7 +99,9 @@ export async function fetchProductsAsItems() {
       ? response
       : [];
 
-  return products.map(mapProductToItem);
+  const items = products.map(mapProductToItem);
+  saveItemsCache(items);
+  return items;
 }
 
 export async function fetchItemById(id) {
