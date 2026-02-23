@@ -384,6 +384,18 @@ export async function getUserProfile() {
 }
 
 /**
+ * Get public user profile by id
+ * Backend endpoint: GET /api/users/profile/:id/
+ * @param {string|number} userId
+ * @returns {Promise<Object>} - User profile data
+ */
+export async function getUserProfileById(userId) {
+  return fetchAPI(`/api/users/profile/public/${userId}/`, {
+    method: "GET",
+  });
+}
+
+/**
  * Get all products
  * Backend endpoint: GET /api/product
  * Fallback: GET /api/product

@@ -5,6 +5,7 @@ import { UI_TEXT } from "../../Components/ItemUi/textFormat";
 import PreviewLine from "../../Components/ItemUi/PreviewLine";
 import { THEME } from "./itemTheme";
 import { fetchItemById } from "../../services/products";
+import { getUserProfileById } from "../../services/api";
 import {
   createComment,
   dislikeComment,
@@ -52,6 +53,9 @@ export default function ItemDetailsPage() {
   const [commentsLoading, setCommentsLoading] = useState(true);
   const [commentText, setCommentText] = useState("");
   const [commentBusy, setCommentBusy] = useState(false);
+  const [reporterProfile, setReporterProfile] = useState(null);
+  const [reporterLoading, setReporterLoading] = useState(false);
+  const [reporterError, setReporterError] = useState("");
 
   useEffect(() => {
     let mounted = true;
@@ -128,6 +132,32 @@ export default function ItemDetailsPage() {
     setComments((prev) => prev.map((c) => (c.id === commentId ? updated : c)));
   }
 
+  async function handleLoadReporter() {
+    if (!item?.reporterId) return;
+    setReporterLoading(true);
+    setReporterError("");
+    try {
+      const profile = await getUserProfileById(item.reporterId);
+      setReporterProfile(profile);
+    } catch (err) {
+      setReporterError(err?.message || "خطا در دریافت پروفایل.");
+    } finally {
+      setReporterLoading(false);
+    }
+  }
+
+  const reporterName =
+    reporterProfile?.name ||
+    reporterProfile?.full_name ||
+    reporterProfile?.user_name ||
+    reporterProfile?.username ||
+    "—";
+  const reporterEmail =
+    reporterProfile?.email ||
+    reporterProfile?.user?.email ||
+    reporterProfile?.user_email ||
+    "—";
+
   return (
     <div
       {...UI_TEXT.page}
@@ -192,7 +222,29 @@ export default function ItemDetailsPage() {
                   <div className="border-top" />
                   <PreviewLine label="دسته‌بندی" value={item.categoryLabel || "—"} />
                   <div className="border-top" />
-                  <PreviewLine label="پروفایل مرتبط" value={item.relatedProfile || "—"} />
+                  <div className="item-detail__reporter">
+                    <button
+                      type="button"
+                      className="btn item-detail__reporter-btn"
+                      onClick={handleLoadReporter}
+                      disabled={!item.reporterId || reporterLoading}
+                    >
+                      {reporterLoading ? "در حال دریافت..." : "مشاهده پروفایل گزارش‌دهنده"}
+                    </button>
+                    {reporterError ? (
+                      <div className="text-danger small mt-2">{reporterError}</div>
+                    ) : null}
+                    {reporterProfile ? (
+                      <div className="item-detail__reporter-card">
+                        <div>
+                          <strong>نام:</strong> {reporterName}
+                        </div>
+                        <div>
+                          <strong>ایمیل:</strong> {reporterEmail}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
                   <div className="border-top" />
                   <PreviewLine
                     label="زمان ثبت"

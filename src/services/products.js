@@ -63,6 +63,12 @@ export function mapProductToItem(product) {
     product?.applicant?.fullName ||
     product?.reporter?.name ||
     "";
+  const reporterId =
+    product?.applicant?.id ||
+    product?.reporter?.id ||
+    product?.user_id ||
+    product?.reporter_id ||
+    null;
 
   return {
     id: String(product?.id ?? ""),
@@ -84,6 +90,7 @@ export function mapProductToItem(product) {
     status: (product?.status || "active").toLowerCase(),
     relatedProfile: reporterEmail,
     applicantName: reporterName,
+    reporterId,
     raw: product,
   };
 }
