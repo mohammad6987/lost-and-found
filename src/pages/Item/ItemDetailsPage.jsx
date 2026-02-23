@@ -104,6 +104,9 @@ export default function ItemDetailsPage() {
   const authorLabel = user?.name?.trim() || user?.email?.trim() || "کاربر";
 
   const coordsLabel = hasCoords ? `${lat.toFixed(6)}, ${lng.toFixed(6)}` : "نامشخص";
+  const ownerEmail = item?.relatedProfile || "";
+  const currentEmail = user?.email || "";
+  const isOwner = isLoggedIn && ownerEmail && ownerEmail === currentEmail;
 
   async function handleSubmitComment(e) {
     e.preventDefault();
@@ -157,6 +160,16 @@ export default function ItemDetailsPage() {
     reporterProfile?.user?.email ||
     reporterProfile?.user_email ||
     "—";
+
+  function handleEdit() {
+    if (!item) return;
+    nav(`/items/${item.id}/edit`, { state: { item } });
+  }
+
+  function handleChat() {
+    if (!item?.relatedProfile) return;
+    nav(`/chat/${item.relatedProfile}`, { state: { itemId: item.id } });
+  }
 
   return (
     <div
@@ -254,6 +267,21 @@ export default function ItemDetailsPage() {
                   <PreviewLine label="مختصات" value={coordsLabel} />
                   <div className="border-top" />
                   <PreviewLine label="توضیحات" value={item.description?.trim() || "—"} />
+                  <div className="item-detail__actions">
+                    {isOwner ? (
+                      <button className="btn item-detail__action-primary" onClick={handleEdit}>
+                        ویرایش شیء
+                      </button>
+                    ) : (
+                      <button
+                        className="btn item-detail__action-primary"
+                        onClick={handleChat}
+                        disabled={!item.relatedProfile}
+                      >
+                        تماس با صاحب شیء
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ) : (

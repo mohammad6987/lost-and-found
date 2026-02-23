@@ -204,6 +204,26 @@
   margin: 10px 0;
 }
 
+.item-detail__actions {
+  margin-top: 14px;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.item-detail__action-primary {
+  background:  #4dcae0;
+  color: #f8feff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.item-detail__action-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .item-detail__image {
   margin: 0;
   border-radius: 16px;
