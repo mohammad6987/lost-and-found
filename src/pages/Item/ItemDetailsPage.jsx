@@ -22,6 +22,29 @@ function getImageSrc(value) {
   if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed;
   if (trimmed.startsWith("/") && trimmed.length < 200) return trimmed;
 
+  const base = trimmed.startsWith("data:image/")
+    ? trimmed.split(",").slice(1).join(",")
+    : trimmed;
+  if (base.includes("\\x") || base.includes("\\")) {
+    const bytes = [];
+    const src = base.replace(/^data:image\/\w+;base64,/, "");
+    for (let i = 0; i < src.length; i++) {
+      const ch = src[i];
+      if (ch === "\\" && src[i + 1] === "x") {
+        const hex = src.slice(i + 2, i + 4);
+        if (/^[0-9a-fA-F]{2}$/.test(hex)) {
+          bytes.push(parseInt(hex, 16));
+          i += 3;
+          continue;
+        }
+      }
+      bytes.push(src.charCodeAt(i) & 0xff);
+    }
+    const binary = String.fromCharCode(...bytes);
+    const b64 = btoa(binary);
+    return `data:image/jpeg;base64,${b64}`;
+  }
+
   let mime = "image/jpeg";
   if (trimmed.startsWith("iVBOR")) mime = "image/png";
   if (trimmed.startsWith("R0lGOD")) mime = "image/gif";

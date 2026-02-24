@@ -458,7 +458,7 @@ export async function getItemById(id) {
     headers.Authorization = `Bearer ${accessToken}`;
   }
 
-  const endpoint = `/api/items/${id}/`;
+  const endpoint = `/api/items/${id}`;
 
   const response = await fetch(`${PRODUCTS_API_BASE_URL}${endpoint}`, {
     method: "GET",

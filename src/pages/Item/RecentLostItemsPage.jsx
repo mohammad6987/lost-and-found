@@ -57,6 +57,29 @@ function getImageSrc(value) {
   if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed;
   if (trimmed.startsWith("/") && trimmed.length < 200) return trimmed;
 
+  const base = trimmed.startsWith("data:image/")
+    ? trimmed.split(",").slice(1).join(",")
+    : trimmed;
+  if (base.includes("\\x") || base.includes("\\")) {
+    const bytes = [];
+    const src = base.replace(/^data:image\/\w+;base64,/, "");
+    for (let i = 0; i < src.length; i++) {
+      const ch = src[i];
+      if (ch === "\\" && src[i + 1] === "x") {
+        const hex = src.slice(i + 2, i + 4);
+        if (/^[0-9a-fA-F]{2}$/.test(hex)) {
+          bytes.push(parseInt(hex, 16));
+          i += 3;
+          continue;
+        }
+      }
+      bytes.push(src.charCodeAt(i) & 0xff);
+    }
+    const binary = String.fromCharCode(...bytes);
+    const b64 = btoa(binary);
+    return `data:image/jpeg;base64,${b64}`;
+  }
+
   let mime = "image/jpeg";
   if (trimmed.startsWith("iVBOR")) mime = "image/png";
   if (trimmed.startsWith("R0lGOD")) mime = "image/gif";
@@ -69,6 +92,10 @@ export default function RecentLostItemsPage() {
   const [selected, setSelected] = useState(null);
   const [items, setItems] = useState([]);
   const [loadingItems, setLoadingItems] = useState(true);
+  const [filterName, setFilterName] = useState("");
+  const [filterType, setFilterType] = useState("");
+  const [filterFromPreset, setFilterFromPreset] = useState("any");
+  const [filterToPreset, setFilterToPreset] = useState("any");
   const { user } = useAuth();
   const currentUserEmail = user?.email || "";
 
@@ -83,11 +110,36 @@ export default function RecentLostItemsPage() {
       .finally(() => setLoadingItems(false));
   }, []);
 
+  function presetToDate(preset, isFrom) {
+    if (!preset || preset === "any") return null;
+    const now = new Date();
+    const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const endOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59);
+    let base = now;
+    if (preset === "today") base = now;
+    if (preset === "7d") base = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    if (preset === "30d") base = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    if (preset === "90d") base = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+    const date = preset === "today" ? now : base;
+    return isFrom ? startOfDay(date) : endOfDay(date);
+  }
+
   const recentItems = useMemo(() => {
+    const nameQuery = filterName.trim().toLowerCase();
+    const fromDate = presetToDate(filterFromPreset, true);
+    const toDate = presetToDate(filterToPreset, false);
     return items
+      .filter((item) => {
+        if (filterType && item.type !== filterType) return false;
+        if (nameQuery && !(item.name || "").toLowerCase().includes(nameQuery)) return false;
+        const createdAt = new Date(item.createdAt);
+        if (fromDate && createdAt < fromDate) return false;
+        if (toDate && createdAt > toDate) return false;
+        return true;
+      })
       .slice()
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  }, [items]);
+  }, [items, filterName, filterType, filterFromPreset, filterToPreset]);
 
   function openItem(item) {
     setSelected(item);
@@ -130,6 +182,59 @@ export default function RecentLostItemsPage() {
 
           <div className="card shadow-sm" style={{ borderColor: THEME.border }}>
             <div className="card-body p-0">
+              <div className="item-list__filters">
+                <details className="item-list__filter-dropdown">
+                  <summary>فیلترها</summary>
+                  <div className="item-list__filter-body">
+                    <label className="item-list__filter-field">
+                      <span>نام (شامل)</span>
+                      <input
+                        type="text"
+                        placeholder="مثلاً کیف"
+                        value={filterName}
+                        onChange={(e) => setFilterName(e.target.value)}
+                      />
+                    </label>
+                    <label className="item-list__filter-field">
+                      <span>نوع</span>
+                      <select
+                        value={filterType}
+                        onChange={(e) => setFilterType(e.target.value)}
+                      >
+                        <option value="">همه</option>
+                        <option value="lost">گمشده</option>
+                        <option value="found">پیداشده</option>
+                      </select>
+                    </label>
+                    <label className="item-list__filter-field">
+                      <span>از تاریخ</span>
+                      <select
+                        value={filterFromPreset}
+                        onChange={(e) => setFilterFromPreset(e.target.value)}
+                      >
+                        <option value="any">بدون محدودیت</option>
+                        <option value="today">امروز</option>
+                        <option value="7d">۷ روز اخیر</option>
+                        <option value="30d">۳۰ روز اخیر</option>
+                        <option value="90d">۹۰ روز اخیر</option>
+                      </select>
+                    </label>
+                    <label className="item-list__filter-field">
+                      <span>تا تاریخ</span>
+                      <select
+                        value={filterToPreset}
+                        onChange={(e) => setFilterToPreset(e.target.value)}
+                      >
+                        <option value="any">بدون محدودیت</option>
+                        <option value="today">امروز</option>
+                        <option value="7d">۷ روز اخیر</option>
+                        <option value="30d">۳۰ روز اخیر</option>
+                        <option value="90d">۹۰ روز اخیر</option>
+                      </select>
+                    </label>
+                  </div>
+                </details>
+              </div>
               {loadingItems ? (
                 <div className="item-list__skeleton">
                   {[1, 2, 3, 4, 5].map((i) => (
