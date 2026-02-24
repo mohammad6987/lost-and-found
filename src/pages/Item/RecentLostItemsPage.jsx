@@ -83,9 +83,8 @@ export default function RecentLostItemsPage() {
       .finally(() => setLoadingItems(false));
   }, []);
 
-  const lostItems = useMemo(() => {
+  const recentItems = useMemo(() => {
     return items
-      .filter((x) => x.type === "lost")
       .slice()
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   }, [items]);
@@ -123,7 +122,7 @@ export default function RecentLostItemsPage() {
       <div className="py-4 px-3 item-page__content">
         <div className="mx-auto" style={{ width: "100%", maxWidth: 900 }}>
           <header className="text-center mb-4">
-            <h1 className="h3 mb-2">اشیای گمشده اخیر</h1>
+            <h1 className="h3 mb-2">اشیای اخیر</h1>
             <div className="text-muted">
               روی هر ردیف کلیک کنید تا جزئیات را ببینید.
             </div>
@@ -143,26 +142,39 @@ export default function RecentLostItemsPage() {
                     </div>
                   ))}
                 </div>
-              ) : lostItems.length === 0 ? (
+              ) : recentItems.length === 0 ? (
                 <div className="p-4 text-center text-muted">موردی وجود ندارد.</div>
               ) : (
-                <div className="list-group list-group-flush">
-                  {lostItems.map((item) => {
+                <div className="list-group list-group-flush item-list">
+                  {recentItems.map((item) => {
                     const isOwner = item.relatedProfile === currentUserEmail;
+                    const isLost = item.type === "lost";
+                    const rowImageSrc = getImageSrc(item.image || item.raw?.image || "");
                     return (
                       <button
                         key={item.id}
-                        className="list-group-item list-group-item-action"
+                        className="list-group-item list-group-item-action item-list__row"
                         onClick={() => openItem(item)}
                         style={{ ...UI_TEXT.page.style }}
                       >
-                        <div className="d-flex align-items-center justify-content-between gap-3">
-                          <div className="d-flex flex-column align-items-start">
-                            <div style={{ fontWeight: 700 }}>
-                              {item.name || "—"}
+                        <div className="d-flex align-items-center justify-content-between gap-3 item-list__row-inner">
+                          <div className="d-flex align-items-center gap-3 item-list__meta">
+                            <div className="item-list__thumb">
+                              {rowImageSrc ? (
+                                <img src={rowImageSrc} alt={item.name || "item"} />
+                              ) : (
+                                <span className="item-list__thumb-placeholder">—</span>
+                              )}
                             </div>
-                            <div className="text-muted" style={{ fontSize: "0.92rem" }}>
-                              {fmt(item.createdAt)}
+                            <div className="d-flex flex-column align-items-start">
+                              <div className="item-list__title">
+                                {item.name || "—"}
+                              </div>
+                              <div className="item-list__sub">
+                                {CATEGORY_LABELS[item.category] || item.categoryLabel || "—"}
+                                {" • "}
+                                {fmt(item.createdAt)}
+                              </div>
                             </div>
                           </div>
 
@@ -170,12 +182,12 @@ export default function RecentLostItemsPage() {
                             <span
                               className="badge"
                               style={{
-                                background: THEME.primarySoft,
-                                color: THEME.primary,
+                                background: isLost ? THEME.primarySoft : "#e7f8ef",
+                                color: isLost ? THEME.primary : "#1f7a3e",
                                 border: `1px solid ${THEME.border}`,
                               }}
                             >
-                              گمشده
+                              {isLost ? "گمشده" : "پیداشده"}
                             </span>
 
                             {isOwner ? (
@@ -195,7 +207,7 @@ export default function RecentLostItemsPage() {
   style={{ borderTop: `1px solid ${THEME.border}` }}
 >
   <button
-    className="btn px-4"
+    className="btn px-4 item-list__add-btn"
     style={{
       backgroundColor: THEME.primary,
       borderColor: THEME.primary,

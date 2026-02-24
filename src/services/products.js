@@ -70,6 +70,16 @@ export function mapProductToItem(product) {
     product?.reporter_id ||
     null;
 
+  const createdAtRaw =
+    product?.createdAt ||
+    product?.created_at ||
+    product?.reportedAt ||
+    product?.reported_at ||
+    product?.updatedAt ||
+    product?.updated_at ||
+    null;
+  const createdAt = createdAtRaw || new Date().toISOString();
+
   return {
     id: String(product?.id ?? ""),
     name: itemName || "—",
@@ -84,8 +94,8 @@ export function mapProductToItem(product) {
       typeof latitude === "number" && typeof longitude === "number"
         ? `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
         : "نامشخص",
-    timestamp: product?.reportedAt || new Date().toISOString(),
-    createdAt: product?.reportedAt || new Date().toISOString(),
+    timestamp: createdAt,
+    createdAt,
     type: (product?.type || "lost").toLowerCase(),
     status: (product?.status || "active").toLowerCase(),
     relatedProfile: reporterEmail,
