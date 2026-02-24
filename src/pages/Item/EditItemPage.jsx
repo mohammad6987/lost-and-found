@@ -3,9 +3,10 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { UI_TEXT } from "../../Components/ItemUi/textFormat";
 import { THEME } from "./itemTheme";
 import FieldBlock from "../../Components/ItemUi/FieldBlock";
-import { CURRENT_USER, MOCK_ITEMS } from "../../mock/mockItems";
+import { MOCK_ITEMS } from "../../mock/mockItems";
 import "./ItemPages.css";
 import { useAuth } from "../../context/AuthContext";
+import { patchItemById } from "../../services/api";
 
 const CATEGORY_OPTIONS = [
   { value: "", label: "یک دسته‌بندی انتخاب کنید..." },
@@ -32,6 +33,8 @@ export default function EditItemPage() {
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
   const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   if (!item) {
     return (
@@ -116,29 +119,34 @@ export default function EditItemPage() {
               <div className="d-flex justify-content-center gap-2 item-edit__actions">
                 <button
                   className="btn px-4 item-edit__submit-btn"
-                  disabled={!isEditable}
-                  onClick={() => {موقت
-                    if (!isEditable) return;
-                    // no API: just show what would be sent
+                  disabled={!isEditable || saving}
+                  onClick={async () => {
+                    if (!isEditable || saving) return;
+                    setSaveError("");
+                    setSaving(true);
                     const payload = {
-                      id: item.id,
-                      changes: {
-                        name: name.trim() || undefined,
-                        category: category || undefined,
-                        notes: notes.trim() || undefined,
-                      },
+                      name: name.trim() || undefined,
+                      category: category || undefined,
+                      notes: notes.trim() || undefined,
                     };
-                    console.log("EDIT payload:", payload);
-                    nav("/items");
+                    try {
+                      await patchItemById(item.id, payload);
+                      nav("/items");
+                    } catch (err) {
+                      setSaveError(err?.message || "خطا در ذخیره‌سازی تغییرات.");
+                    } finally {
+                      setSaving(false);
+                    }
                   }}
                 >
-                  ذخیره تغییرات
+                  {saving ? "در حال ذخیره..." : "ذخیره تغییرات"}
                 </button>
 
                 <button className="btn btn-outline-secondary px-4 item-edit__back-btn" onClick={() => nav("/items")}>
                   بازگشت
                 </button>
               </div>
+              {saveError ? <div className="alert alert-danger mt-3 text-end">{saveError}</div> : null}
             </div>
           </div>
         </div>

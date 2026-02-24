@@ -7,6 +7,7 @@ import FieldBlock from "../../Components/ItemUi/FieldBlock";
 import PreviewLine from "../../Components/ItemUi/PreviewLine";
 import "./ItemPages.css";
 import { useAuth } from "../../context/AuthContext";
+import { createItem } from "../../services/api";
 
 const CATEGORY_OPTIONS = [
   { value: "", label: "یک دسته‌بندی انتخاب کنید..." },
@@ -158,6 +159,8 @@ export default function AddItemPage() {
   const [imagePreview, setImagePreview] = useState("");
   const [x, setX] = useState("");
   const [y, setY] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const [searchParams] = useSearchParams();
 
   const [now, setNow] = useState(() => new Date());
@@ -228,33 +231,35 @@ export default function AddItemPage() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!isLoggedIn || !isValid || locationError) return;
+    if (!isLoggedIn || !isValid || locationError || submitting) return;
 
-    const createdAt = new Date();
+    setSubmitError("");
+    setSubmitting(true);
     const payload = {
-      type,
       name: name.trim(),
-      category,
-      relatedProfile: profileValue.trim(),
-      createdAt: createdAt.toISOString(),
-      notes: notes.trim() || null,
-      x: hasCoords ? clamped.lat : null,
-      y: hasCoords ? clamped.lng : null,
-      image: imageFile
-        ? { name: imageFile.name, size: imageFile.size, type: imageFile.type }
-        : null,
+      description: notes.trim() || "",
+      type,
+      status: "Active",
+      category_name: category,
+      longitude: hasCoords ? clamped.lng : null,
+      latitude: hasCoords ? clamped.lat : null,
     };
 
-    console.log("Submitting new item:", payload);
-
-    setName("");
-    setCategory("");
-    setProfile("");
-    setNotes("");
-    setImageFile(null);
-    setImagePreview("");
-    setX("");
-    setY("");
+    try {
+      await createItem(payload);
+      setName("");
+      setCategory("");
+      setProfile("");
+      setNotes("");
+      setImageFile(null);
+      setImagePreview("");
+      setX("");
+      setY("");
+    } catch (err) {
+      setSubmitError(err?.message || "خطا در ثبت آیتم.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   const categoryLabel =
@@ -552,9 +557,9 @@ export default function AddItemPage() {
                   <button
                     type="submit"
                     className="btn px-4 item-add__submit-btn"
-                    disabled={!isValid || locationError || isLocked}
+                    disabled={!isValid || locationError || isLocked || submitting}
                   >
-                    ثبت شیء {typeLabel}
+                    {submitting ? "در حال ثبت..." : `ثبت شیء ${typeLabel}`}
                   </button>
 
                   <button
@@ -574,6 +579,7 @@ export default function AddItemPage() {
                     پاک‌سازی
                   </button>
                 </div>
+                {submitError ? <div className="alert alert-danger mt-3 text-end">{submitError}</div> : null}
               </form>
             </div>
           </div>

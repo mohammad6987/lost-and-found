@@ -484,6 +484,93 @@ export async function getItemById(id) {
   return data;
 }
 
+/**
+ * Create item
+ * Backend endpoint: POST /api/items/
+ * @param {Object} payload
+ */
+export async function createItem(payload) {
+  const accessToken = getAccessToken();
+  const headers = {
+    accept: "*/*",
+    "Content-Type": "application/json",
+  };
+
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+
+  const endpoint = `/api/items/`;
+
+  const response = await fetch(`${PRODUCTS_API_BASE_URL}${endpoint}`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(payload),
+  });
+
+  let data;
+  try {
+    data = await response.json();
+  } catch {
+    data = {};
+  }
+
+  if (!response.ok) {
+    const error = new Error(
+      data.error || data.detail || data.message || getErrorMessage(response.status)
+    );
+    error.status = response.status;
+    error.data = data;
+    throw error;
+  }
+
+  return data;
+}
+
+/**
+ * Patch item by id
+ * Backend endpoint: PATCH /api/items/:id/
+ * @param {string|number} id
+ * @param {Object} payload
+ */
+export async function patchItemById(id, payload) {
+  const accessToken = getAccessToken();
+  const headers = {
+    accept: "*/*",
+    "Content-Type": "application/json",
+  };
+
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+
+  const endpoint = `/api/items/${id}/`;
+
+  const response = await fetch(`${PRODUCTS_API_BASE_URL}${endpoint}`, {
+    method: "PATCH",
+    headers,
+    body: JSON.stringify(payload),
+  });
+
+  let data;
+  try {
+    data = await response.json();
+  } catch {
+    data = {};
+  }
+
+  if (!response.ok) {
+    const error = new Error(
+      data.error || data.detail || data.message || getErrorMessage(response.status)
+    );
+    error.status = response.status;
+    error.data = data;
+    throw error;
+  }
+
+  return data;
+}
+
 // ========== Password Reset API ==========
 
 /**
