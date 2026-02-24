@@ -6,13 +6,7 @@ import PreviewLine from "../../Components/ItemUi/PreviewLine";
 import { THEME } from "./itemTheme";
 import { fetchItemById } from "../../services/products";
 import { getUserProfileById } from "../../services/api";
-import {
-  createComment,
-  dislikeComment,
-  fetchComments,
-  likeComment,
-  reportComment,
-} from "../../services/comments";
+import { createComment, fetchComments, reportComment } from "../../services/comments";
 import { useAuth } from "../../context/AuthContext";
 import "./ItemPages.css";
 import CachedTileLayer from "../../Components/CachedTileLayer";
@@ -53,6 +47,14 @@ export default function ItemDetailsPage() {
   const [commentsLoading, setCommentsLoading] = useState(true);
   const [commentText, setCommentText] = useState("");
   const [commentBusy, setCommentBusy] = useState(false);
+  const [commentReportBusy, setCommentReportBusy] = useState(false);
+  const [commentReportError, setCommentReportError] = useState("");
+  const [commentPage, setCommentPage] = useState(0);
+  const [commentSize] = useState(20);
+  const [commentTotalPages, setCommentTotalPages] = useState(0);
+  const [commentHasNext, setCommentHasNext] = useState(false);
+  const [commentTotalItems, setCommentTotalItems] = useState(0);
+  const [commentError, setCommentError] = useState("");
   const [reporterProfile, setReporterProfile] = useState(null);
   const [reporterLoading, setReporterLoading] = useState(false);
   const [reporterError, setReporterError] = useState("");
@@ -80,21 +82,32 @@ export default function ItemDetailsPage() {
     };
   }, [id]);
 
-  useEffect(() => {
-    let mounted = true;
+  async function loadComments(page = commentPage) {
     setCommentsLoading(true);
-    fetchComments(id, { limit: 50, offset: 0 })
-      .then((res) => {
-        if (!mounted) return;
-        setComments(res.results || []);
-      })
-      .finally(() => {
-        if (!mounted) return;
-        setCommentsLoading(false);
-      });
-    return () => {
-      mounted = false;
-    };
+    setCommentError("");
+    try {
+      const res = await fetchComments(id, { page, size: commentSize });
+      setComments(Array.isArray(res.items) ? res.items : []);
+      setCommentTotalPages(res.totalPages || 0);
+      setCommentHasNext(Boolean(res.hasNext));
+      setCommentTotalItems(res.totalItems || 0);
+    } catch (err) {
+      setComments([]);
+      setCommentTotalPages(0);
+      setCommentHasNext(false);
+      setCommentTotalItems(0);
+      setCommentError(err?.message || "خطا در دریافت نظرات.");
+    } finally {
+      setCommentsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadComments(commentPage);
+  }, [id, commentPage, commentSize]);
+
+  useEffect(() => {
+    setCommentPage(0);
   }, [id]);
 
   const lat = useMemo(() => (item?.x != null ? Number(item.x) : Number.NaN), [item]);
@@ -113,26 +126,57 @@ export default function ItemDetailsPage() {
     if (!isLoggedIn || !commentText.trim()) return;
     setCommentBusy(true);
     try {
-      const created = await createComment(id, {
+      await createComment(id, {
         text: commentText.trim(),
-        author: authorLabel,
       });
-      setComments((prev) => [created, ...prev]);
       setCommentText("");
+      if (commentPage !== 0) {
+        setCommentPage(0);
+      } else {
+        await loadComments(0);
+      }
     } finally {
       setCommentBusy(false);
     }
   }
 
-  async function handleUpdateComment(action, commentId) {
-    let updater = null;
-    if (action === "like") updater = likeComment;
-    if (action === "dislike") updater = dislikeComment;
-    if (action === "report") updater = reportComment;
-    if (!updater) return;
-    const updated = await updater(id, commentId);
-    if (!updated) return;
-    setComments((prev) => prev.map((c) => (c.id === commentId ? updated : c)));
+  async function handleReportComment(commentId) {
+    const cause = window.prompt("علت گزارش را وارد کنید (مثلاً: اسپم، توهین)");
+    if (!cause || !cause.trim()) return;
+    try {
+      if (commentReportBusy) return;
+      setCommentReportBusy(true);
+      setCommentReportError("");
+      await reportComment(id, commentId, cause.trim());
+      await loadComments(commentPage);
+    } catch (err) {
+      setCommentReportError(err?.message || "خطا در گزارش نظر.");
+    } finally {
+      setCommentReportBusy(false);
+    }
+  }
+
+  function getCommentAuthor(comment) {
+    if (!comment) return "کاربر";
+    if (typeof comment.author === "string" && comment.author.trim()) return comment.author;
+    if (comment.author && typeof comment.author === "object") {
+      if (typeof comment.author.name === "string" && comment.author.name.trim()) return comment.author.name;
+      if (typeof comment.author.username === "string" && comment.author.username.trim()) return comment.author.username;
+    }
+    if (comment.user && typeof comment.user === "object") {
+      if (typeof comment.user.name === "string" && comment.user.name.trim()) return comment.user.name;
+      if (typeof comment.user.username === "string" && comment.user.username.trim()) return comment.user.username;
+      if (typeof comment.user.email === "string" && comment.user.email.trim()) return comment.user.email;
+    }
+    return "کاربر";
+  }
+
+  function getCommentCreatedAt(comment) {
+    const raw = comment?.createdAt || comment?.created_at || comment?.created || null;
+    if (!raw) return "—";
+    const dt = new Date(raw);
+    if (Number.isNaN(dt.getTime())) return "—";
+    return dt.toLocaleString();
   }
 
   async function handleLoadReporter() {
@@ -317,15 +361,17 @@ export default function ItemDetailsPage() {
             <div className="item-detail__comment-list">
               {commentsLoading ? (
                 <div className="text-muted">در حال دریافت نظرات...</div>
+              ) : commentError ? (
+                <div className="text-danger">{commentError}</div>
               ) : comments.length === 0 ? (
                 <div className="text-muted">نظری ثبت نشده است.</div>
               ) : (
                 comments.map((comment) => (
                   <div key={comment.id} className="item-detail__comment">
                     <div className="item-detail__comment-header">
-                      <strong>{comment.author || "کاربر"}</strong>
+                      <strong>{getCommentAuthor(comment)}</strong>
                       <span className="text-muted" {...UI_TEXT.ltrInline}>
-                        {new Date(comment.createdAt).toLocaleString()}
+                        {getCommentCreatedAt(comment)}
                       </span>
                     </div>
                     <div className="item-detail__comment-text">{comment.text}</div>
@@ -333,28 +379,40 @@ export default function ItemDetailsPage() {
                       <button
                         type="button"
                         className="btn btn-sm btn-outline-secondary"
-                        onClick={() => handleUpdateComment("like", comment.id)}
+                        onClick={() => handleReportComment(comment.id)}
+                        disabled={commentReportBusy}
                       >
-                        👍 {comment.likes || 0}
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-outline-secondary"
-                        onClick={() => handleUpdateComment("dislike", comment.id)}
-                      >
-                        👎 {comment.dislikes || 0}
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-outline-secondary"
-                        onClick={() => handleUpdateComment("report", comment.id)}
-                      >
-                        گزارش ({comment.reports || 0})
+                        {commentReportBusy ? "در حال ارسال..." : "گزارش"}
                       </button>
                     </div>
                   </div>
                 ))
               )}
+            </div>
+            {commentReportError ? (
+              <div className="alert alert-danger mt-3 text-end">{commentReportError}</div>
+            ) : null}
+
+            <div className="item-detail__comment-pagination">
+              <button
+                type="button"
+                className="btn btn-outline-secondary btn-sm"
+                disabled={commentsLoading || commentPage === 0}
+                onClick={() => setCommentPage((p) => Math.max(0, p - 1))}
+              >
+                قبلی
+              </button>
+              <span className="text-muted">
+                صفحه {commentPage + 1} از {Math.max(commentTotalPages, 1)} • {commentTotalItems} نظر
+              </span>
+              <button
+                type="button"
+                className="btn btn-outline-secondary btn-sm"
+                disabled={commentsLoading || !commentHasNext}
+                onClick={() => setCommentPage((p) => p + 1)}
+              >
+                بعدی
+              </button>
             </div>
           </div>
         </div>

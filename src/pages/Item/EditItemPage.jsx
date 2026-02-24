@@ -167,12 +167,11 @@ export default function EditItemPage() {
                     setSaving(true);
                     const trimmedName = name.trim();
                     const trimmedNotes = notes.trim();
-                    const payload = {
-                      name: trimmedName || undefined,
-                      category: category || undefined,
-                      notes: trimmedNotes || undefined,
-                      image: imageBase64 || undefined,
-                    };
+                    const payload = {};
+                    if (trimmedName) payload.name = trimmedName;
+                    if (category) payload.category = category;
+                    if (trimmedNotes) payload.notes = trimmedNotes;
+                    if (imageBase64) payload.image = imageBase64;
                     try {
                       await patchItemById(item.id, payload);
                       nav("/items");

@@ -453,6 +453,14 @@
   flex-wrap: wrap;
 }
 
+.item-detail__comment-pagination {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 @media (max-width: 900px) {
   .item-detail__grid-page {
     grid-template-columns: 1fr;
@@ -469,6 +477,11 @@
 
   .item-detail__comment-btn {
     width: 100%;
+  }
+
+  .item-detail__comment-pagination {
+    flex-direction: column;
+    align-items: stretch;
   }
 }
 

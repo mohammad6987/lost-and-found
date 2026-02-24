@@ -1,89 +1,70 @@
-const STORAGE_KEY = "lf_comments_v1";
+import { getAccessToken } from "./auth";
 
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+const COMMENTS_API_BASE_URL =
+  import.meta.env.VITE_COMMENTS_API_BASE_URL ||
+  import.meta.env.VITE_PRODUCTS_API_BASE_URL ||
+  "https://sharif-lostfound.liara.run";
+
+function normalizeCommentsResponse(payload) {
+  return payload?.data || payload || {};
 }
 
-function loadStore() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
+export async function fetchComments(itemId, { page = 0, size = 20 } = {}) {
+  const endpoint = `/api/product/${itemId}/comments?page=${page}&size=${size}`;
+  const response = await fetch(`${COMMENTS_API_BASE_URL}${endpoint}`, {
+    method: "GET",
+    headers: { accept: "application/json" },
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(data?.message || data?.detail || "خطا در دریافت نظرات.");
+    error.status = response.status;
+    error.data = data;
+    throw error;
   }
+  return normalizeCommentsResponse(data);
 }
 
-function saveStore(store) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+export async function createComment(itemId, { text, parentCommentId = null }) {
+  const accessToken = getAccessToken();
+  const endpoint = `/api/product/${itemId}/comments`;
+  const response = await fetch(`${COMMENTS_API_BASE_URL}${endpoint}`, {
+    method: "POST",
+    headers: {
+      accept: "application/json",
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+    body: JSON.stringify({ text, parentCommentId }),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(data?.message || data?.detail || "خطا در ثبت نظر.");
+    error.status = response.status;
+    error.data = data;
+    throw error;
+  }
+  return normalizeCommentsResponse(data);
 }
 
-function makeId() {
-  return `c_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
-}
-
-export async function fetchComments(itemId, { limit = 20, offset = 0 } = {}) {
-  await sleep(150);
-  const store = loadStore();
-  const all = Array.isArray(store[itemId]) ? store[itemId] : [];
-  return {
-    results: all.slice(offset, offset + limit),
-    count: all.length,
-  };
-}
-
-export async function createComment(itemId, { text, author }) {
-  await sleep(150);
-  const store = loadStore();
-  const list = Array.isArray(store[itemId]) ? store[itemId] : [];
-  const comment = {
-    id: makeId(),
-    itemId,
-    text,
-    author,
-    createdAt: new Date().toISOString(),
-    likes: 0,
-    dislikes: 0,
-    reports: 0,
-  };
-  const next = [comment, ...list];
-  store[itemId] = next;
-  saveStore(store);
-  return comment;
-}
-
-export async function likeComment(itemId, commentId) {
-  await sleep(120);
-  return updateComment(itemId, commentId, (c) => ({
-    ...c,
-    likes: (c.likes || 0) + 1,
-  }));
-}
-
-export async function dislikeComment(itemId, commentId) {
-  await sleep(120);
-  return updateComment(itemId, commentId, (c) => ({
-    ...c,
-    dislikes: (c.dislikes || 0) + 1,
-  }));
-}
-
-export async function reportComment(itemId, commentId) {
-  await sleep(120);
-  return updateComment(itemId, commentId, (c) => ({
-    ...c,
-    reports: (c.reports || 0) + 1,
-  }));
-}
-
-function updateComment(itemId, commentId, updater) {
-  const store = loadStore();
-  const list = Array.isArray(store[itemId]) ? store[itemId] : [];
-  const idx = list.findIndex((c) => c.id === commentId);
-  if (idx === -1) return null;
-  const updated = updater(list[idx]);
-  const next = [...list];
-  next[idx] = updated;
-  store[itemId] = next;
-  saveStore(store);
-  return updated;
+export async function reportComment(itemId, commentId, cause) {
+  const accessToken = getAccessToken();
+  const endpoint = `/api/product/${itemId}/comments/${commentId}/report`;
+  const response = await fetch(`${COMMENTS_API_BASE_URL}${endpoint}`, {
+    method: "POST",
+    headers: {
+      accept: "application/json",
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+    body: JSON.stringify({ cause }),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(data?.message || data?.detail || "خطا در گزارش نظر.");
+    error.status = response.status;
+    error.data = data;
+    throw error;
+  }
+  return data;
 }
