@@ -112,6 +112,7 @@
   box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16);
   overflow-y: auto;
   border: 1px solid rgba(31, 79, 163, 0.16);
+  font-family: "Vazirmatn", "Inter", system-ui, sans-serif;
 }
 
 .sidebar h3 {
@@ -143,6 +144,128 @@
   font-size: 13px;
   color: #334155;
   cursor: pointer;
+  font-family: "Vazirmatn", "Inter", system-ui, sans-serif;
+}
+
+.filter-field {
+  display: grid;
+  gap: 6px;
+  cursor: default;
+}
+
+.filter-field input {
+  border: 1px solid rgba(15, 23, 42, 0.2);
+  border-radius: 10px;
+  padding: 6px 10px;
+  font-size: 13px;
+  background: #fff;
+  font-family: "Vazirmatn", "Inter", system-ui, sans-serif;
+}
+
+.filter-field select {
+  border: 1px solid rgba(15, 23, 42, 0.2);
+  border-radius: 10px;
+  padding: 6px 10px;
+  font-size: 13px;
+  background: #fff;
+  font-family: "Vazirmatn", "Inter", system-ui, sans-serif;
+}
+
+.filter-dropdown {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 10px;
+  background: #fff;
+  padding: 8px 10px;
+}
+
+.filter-dropdown summary {
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 12px;
+  color: #334155;
+  list-style: none;
+  font-family: "Vazirmatn", "Inter", system-ui, sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.filter-dropdown summary::-webkit-details-marker {
+  display: none;
+}
+
+.filter-dropdown-body {
+  margin-top: 8px;
+  display: grid;
+  gap: 8px;
+}
+
+.filter-dropdown[open] summary::after {
+  content: "▲";
+  font-size: 10px;
+  color: #64748b;
+}
+
+.filter-dropdown summary::after {
+  content: "▼";
+  font-size: 10px;
+  color: #64748b;
+}
+
+.filter-divider {
+  height: 1px;
+  background: rgba(15, 23, 42, 0.08);
+  margin: 4px 0;
+}
+
+.filter-coords {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.filter-error {
+  font-size: 12px;
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+.filter-actions {
+  display: grid;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.filter-btn {
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: #fff;
+  color: #1f2937;
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.filter-btn.primary {
+  background: #16a34a;
+  color: #fff;
+  border-color: transparent;
+}
+
+.filter-btn.ghost {
+  background: #f1f5f9;
+}
+
+.filter-btn.active {
+  background: #0f766e;
+  color: #fff;
+  border-color: transparent;
+}
+
+.filter-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .filter-label input {

@@ -5,13 +5,14 @@ import {
   Marker,
   Popup,
   CircleMarker,
+  Circle,
   Tooltip,
   useMapEvents,
   useMap,
 } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-markercluster";
 import L from "leaflet";
-import { fetchProductsAsItems } from "../services/products";
+import { fetchItemsByLocation, fetchProductsAsItems } from "../services/products";
 import CachedTileLayer from "./CachedTileLayer";
 
 import "leaflet/dist/leaflet.css";
@@ -83,6 +84,16 @@ function FlyToMarker({ item }) {
   return null;
 }
 
+function MapClickPicker({ onPick }) {
+  useMapEvents({
+    click(e) {
+      const { lat, lng } = e.latlng;
+      onPick({ lat, lng });
+    },
+  });
+  return null;
+}
+
 /* ================== sidebar ================== */
 function Sidebar({
   items,
@@ -91,6 +102,25 @@ function Sidebar({
   selectedCategories,
   toggleCategory,
   loading,
+  filterCenter,
+  filterDiameterM,
+  filterPickMode,
+  filterBusy,
+  filterError,
+  filterName,
+  filterType,
+  filterFromPreset,
+  filterToPreset,
+  filterLocationMode,
+  onChangeDiameter,
+  onChangeName,
+  onChangeType,
+  onChangeFromPreset,
+  onChangeToPreset,
+  onChangeLocationMode,
+  onTogglePickMode,
+  onApplyFilter,
+  onClearFilter,
 }) {
   if (loading) {
     return (
@@ -132,6 +162,119 @@ function Sidebar({
             {getCategoryMeta(cat).label}
           </label>
         ))}
+      </div>
+
+      <div className="filter-section">
+        <strong>فیلترها</strong>
+
+        <details className="filter-dropdown">
+          <summary>نمایش و تنظیم فیلترها</summary>
+          <div className="filter-dropdown-body">
+            <label className="filter-label filter-field">
+              <span>نام (شامل)</span>
+              <input
+                type="text"
+                placeholder="مثلاً کیف"
+                value={filterName}
+                onChange={(e) => onChangeName(e.target.value)}
+              />
+            </label>
+
+            <label className="filter-label filter-field">
+              <span>نوع</span>
+              <select
+                value={filterType}
+                onChange={(e) => onChangeType(e.target.value)}
+              >
+                <option value="">همه</option>
+                <option value="LOST">گمشده</option>
+                <option value="FOUND">پیداشده</option>
+              </select>
+            </label>
+
+            <label className="filter-label filter-field">
+              <span>از تاریخ</span>
+              <select
+                value={filterFromPreset}
+                onChange={(e) => onChangeFromPreset(e.target.value)}
+              >
+                <option value="any">بدون محدودیت</option>
+                <option value="today">امروز</option>
+                <option value="7d">۷ روز اخیر</option>
+                <option value="30d">۳۰ روز اخیر</option>
+                <option value="90d">۹۰ روز اخیر</option>
+              </select>
+            </label>
+
+            <label className="filter-label filter-field">
+              <span>تا تاریخ</span>
+              <select
+                value={filterToPreset}
+                onChange={(e) => onChangeToPreset(e.target.value)}
+              >
+                <option value="any">بدون محدودیت</option>
+                <option value="today">امروز</option>
+                <option value="7d">۷ روز اخیر</option>
+                <option value="30d">۳۰ روز اخیر</option>
+                <option value="90d">۹۰ روز اخیر</option>
+              </select>
+            </label>
+
+            <div className="filter-divider" />
+
+            <label className="filter-label filter-field">
+              <span>حالت موقعیت</span>
+              <select
+                value={filterLocationMode}
+                onChange={(e) => onChangeLocationMode(e.target.value)}
+              >
+                <option value="none">بدون موقعیت</option>
+                <option value="around_pin">اطراف نقطه انتخابی</option>
+              </select>
+            </label>
+            <label className="filter-label filter-field">
+              <span>قطر (متر)</span>
+              <input
+                type="number"
+                min="10"
+                step="10"
+                value={filterDiameterM}
+                onChange={(e) => onChangeDiameter(e.target.value)}
+                disabled={filterLocationMode !== "around_pin"}
+              />
+            </label>
+            <div className="filter-coords">
+              مرکز: {filterCenter.lat.toFixed(6)} , {filterCenter.lng.toFixed(6)}
+            </div>
+            {filterError ? <div className="filter-error">{filterError}</div> : null}
+            <div className="filter-actions">
+              <button
+                type="button"
+                className={`filter-btn ${filterPickMode ? "active" : ""}`}
+                onClick={onTogglePickMode}
+                disabled={filterBusy || filterLocationMode !== "around_pin"}
+              >
+                {filterPickMode ? "لغو انتخاب روی نقشه" : "انتخاب روی نقشه"}
+              </button>
+              <button
+                type="button"
+                className="filter-btn primary"
+                onClick={onApplyFilter}
+                disabled={filterBusy}
+              >
+                {filterBusy ? "در حال اعمال..." : "اعمال فیلتر"}
+              </button>
+              <button
+                type="button"
+                className="filter-btn ghost"
+                onClick={onClearFilter}
+                disabled={filterBusy}
+              >
+                حذف فیلتر
+              </button>
+            </div>
+          </div>
+        </details>
       </div>
 
       {items
@@ -177,6 +320,20 @@ export default function LostAndFoundMap() {
   const [userLocation, setUserLocation] = useState(null);
   const [userOutOfBounds, setUserOutOfBounds] = useState(false);
   const [loadingItems, setLoadingItems] = useState(true);
+  const [filterCenter, setFilterCenter] = useState({
+    lat: center[0],
+    lng: center[1],
+  });
+  const [filterDiameterM, setFilterDiameterM] = useState(1000);
+  const [filterName, setFilterName] = useState("");
+  const [filterType, setFilterType] = useState("");
+  const [filterFromPreset, setFilterFromPreset] = useState("any");
+  const [filterToPreset, setFilterToPreset] = useState("any");
+  const [filterLocationMode, setFilterLocationMode] = useState("none");
+  const [filterPickMode, setFilterPickMode] = useState(false);
+  const [filterApplied, setFilterApplied] = useState(false);
+  const [filterBusy, setFilterBusy] = useState(false);
+  const [filterError, setFilterError] = useState("");
   const hasShownBoundsAlert = useRef(false);
 
   const markerRefs = useRef({});
@@ -249,6 +406,90 @@ export default function LostAndFoundMap() {
     navigate(`/add?x=${lat}&y=${lng}`);
   };
 
+  async function applyLocationFilter() {
+    if (filterBusy) return;
+    const diameterM = Number(filterDiameterM);
+    const needsLocation = filterLocationMode === "around_pin";
+    if (needsLocation && (!Number.isFinite(diameterM) || diameterM <= 0)) {
+      setFilterError("قطر باید بیشتر از صفر باشد.");
+      return;
+    }
+    if (needsLocation && (!filterCenter?.lat || !filterCenter?.lng)) {
+      setFilterError("مرکز مکانی را انتخاب کنید.");
+      return;
+    }
+    const radiusKm = diameterM / 2000;
+    setFilterError("");
+    setFilterBusy(true);
+    setLoadingItems(true);
+    try {
+      const fromIso = toPresetIso(filterFromPreset, true);
+      const toIso = toPresetIso(filterToPreset, false);
+      const apiItems = await fetchItemsByLocation({
+        lat: needsLocation ? filterCenter.lat : undefined,
+        lon: needsLocation ? filterCenter.lng : undefined,
+        radiusKm: needsLocation ? radiusKm : undefined,
+        name: filterName.trim() || undefined,
+        type: filterType || undefined,
+        from: fromIso || undefined,
+        to: toIso || undefined,
+      });
+      const mapItems = apiItems.filter(
+        (item) => typeof item.x === "number" && typeof item.y === "number"
+      );
+      setItems(mapItems);
+      setSelectedCategories(
+        Array.from(new Set(mapItems.map((item) => item.category).filter(Boolean)))
+      );
+      setSelectedId(null);
+      setFilterApplied(true);
+      setFilterPickMode(false);
+    } catch (err) {
+      setFilterError(err?.message || "خطا در جستجوی مکانی.");
+    } finally {
+      setFilterBusy(false);
+      setLoadingItems(false);
+    }
+  }
+
+  async function clearLocationFilter() {
+    if (filterBusy) return;
+    setFilterError("");
+    setFilterApplied(false);
+    setFilterPickMode(false);
+    setLoadingItems(true);
+    try {
+      const apiItems = await fetchProductsAsItems();
+      const mapItems = apiItems.filter(
+        (item) => typeof item.x === "number" && typeof item.y === "number"
+      );
+      setItems(mapItems);
+      setSelectedCategories(
+        Array.from(new Set(mapItems.map((item) => item.category).filter(Boolean)))
+      );
+      setSelectedId(null);
+    } catch (err) {
+      setFilterError(err?.message || "خطا در دریافت آیتم‌ها.");
+    } finally {
+      setLoadingItems(false);
+    }
+  }
+
+  function toPresetIso(preset, isFrom) {
+    if (!preset || preset === "any") return "";
+    const now = new Date();
+    const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const endOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59);
+    let base = now;
+    if (preset === "today") base = now;
+    if (preset === "7d") base = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    if (preset === "30d") base = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    if (preset === "90d") base = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+    const date = preset === "today" ? now : base;
+    const dt = isFrom ? startOfDay(date) : endOfDay(date);
+    return dt.toISOString();
+  }
+
   return (
     <div className="app-container">
       <Sidebar
@@ -258,6 +499,34 @@ export default function LostAndFoundMap() {
         selectedCategories={selectedCategories}
         toggleCategory={toggleCategory}
         loading={loadingItems}
+        filterCenter={filterCenter}
+        filterDiameterM={filterDiameterM}
+        filterPickMode={filterPickMode}
+        filterBusy={filterBusy}
+        filterError={filterError}
+        filterName={filterName}
+        filterType={filterType}
+        filterFromPreset={filterFromPreset}
+        filterToPreset={filterToPreset}
+        filterLocationMode={filterLocationMode}
+        onChangeDiameter={setFilterDiameterM}
+        onChangeName={setFilterName}
+        onChangeType={setFilterType}
+        onChangeFromPreset={setFilterFromPreset}
+        onChangeToPreset={setFilterToPreset}
+        onChangeLocationMode={(val) => {
+          setFilterLocationMode(val);
+          if (val !== "around_pin") setFilterPickMode(false);
+        }}
+        onTogglePickMode={() =>
+          setFilterPickMode((p) => {
+            const next = !p;
+            if (next) setFilterLocationMode("around_pin");
+            return next;
+          })
+        }
+        onApplyFilter={applyLocationFilter}
+        onClearFilter={clearLocationFilter}
       />
 
       <div className="map-wrapper">
@@ -364,11 +633,31 @@ export default function LostAndFoundMap() {
             </CircleMarker>
           ) : null}
 
-          <AddMarker bounds={bounds} onPick={handlePickLocation} />
+          {!filterPickMode ? (
+            <AddMarker bounds={bounds} onPick={handlePickLocation} />
+          ) : null}
+
+          {filterPickMode ? <MapClickPicker onPick={setFilterCenter} /> : null}
+
+          {filterLocationMode === "around_pin" && (filterApplied || filterPickMode) ? (
+            <>
+              <Marker position={[filterCenter.lat, filterCenter.lng]} />
+              <Circle
+                center={[filterCenter.lat, filterCenter.lng]}
+                radius={Number(filterDiameterM) / 2}
+                pathOptions={{
+                  color: "#16a34a",
+                  fillColor: "#22c55e",
+                  fillOpacity: 0.2,
+                }}
+              />
+            </>
+          ) : null}
 
           {selectedItem && <FlyToMarker item={selectedItem} />}
         </MapContainer>
       </div>
+
     </div>
   );
 }

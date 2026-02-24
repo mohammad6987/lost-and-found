@@ -2,6 +2,8 @@ import { getItemById, getProducts } from "./api";
 
 const ITEMS_CACHE_KEY = "lf_items_cache_v1";
 const ITEMS_TTL_MS = 60 * 1000;
+const PRODUCTS_API_BASE_URL =
+  import.meta.env.VITE_PRODUCTS_API_BASE_URL || "https://sharif-lostfound.liara.run";
 
 function loadItemsCache() {
   try {
@@ -124,4 +126,43 @@ export async function fetchProductsAsItems() {
 export async function fetchItemById(id) {
   const data = await getItemById(id);
   return mapProductToItem(data);
+}
+
+export async function fetchItemsByLocation({
+  lat,
+  lon,
+  radiusKm,
+  name,
+  type,
+  from,
+  to,
+} = {}) {
+  const params = new URLSearchParams();
+  if (name) params.set("name", name);
+  if (type) params.set("type", type);
+  if (from) params.set("from", from);
+  if (to) params.set("to", to);
+  const hasLocation =
+    lat !== undefined && lon !== undefined && radiusKm !== undefined;
+  if (hasLocation) {
+    params.set("lat", String(lat));
+    params.set("lon", String(lon));
+    params.set("radiusKm", String(radiusKm));
+  }
+  const endpoint = `/api/items/search/location?${params.toString()}`;
+  const response = await fetch(`${PRODUCTS_API_BASE_URL}${endpoint}`, {
+    method: "GET",
+    headers: { accept: "application/json" },
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || data?.success === false) {
+    const error = new Error(
+      data?.message || data?.detail || "خطا در جستجوی مکانی."
+    );
+    error.status = response.status;
+    error.data = data;
+    throw error;
+  }
+  const list = Array.isArray(data?.data) ? data.data : [];
+  return list.map(mapProductToItem);
 }
