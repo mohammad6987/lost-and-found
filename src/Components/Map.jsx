@@ -44,13 +44,16 @@ const TILE_URL = import.meta.env.VITE_MAP_TILE_URL;
 const TILE_ATTR = import.meta.env.VITE_MAP_ATTRIBUTION;
 
 /* ================== helpers ================== */
-function markerIcon(category) {
+function markerIcon(category, count = 1) {
   const meta = getCategoryMeta(category);
+  const label = count > 1 ? `<span class="marker-count">${count}</span>` : "";
   return L.divIcon({
     className: "",
-    html: `<div class="custom-marker" style="background:${meta.color}"></div>`,
-    iconSize: [14, 14],
-    iconAnchor: [7, 7],
+    html: `<div class="custom-marker" style="background:${meta.color}">
+             ${label}
+           </div>`,
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
     category,
     categoryColor: meta.color,
   });
@@ -548,25 +551,8 @@ export default function LostAndFoundMap() {
           <MarkerClusterGroup
             maxClusterRadius={50}
             iconCreateFunction={(cluster) => {
-              const markers = cluster.getAllChildMarkers();
-              const counts = {};
-
-              markers.forEach((m) => {
-                const cat =
-                  m.options.icon.options.category || "other";
-                counts[cat] = (counts[cat] || 0) + 1;
-              });
-
-              const dots = Object.entries(counts)
-                .map(
-                  ([cat, count]) =>
-                    `<span class="cluster-dot" style="background:${getCategoryMeta(cat).color}" title="${getCategoryMeta(cat).label}: ${count}"></span>`
-                )
-                .join("");
-
               return L.divIcon({
                 html: `<div class="custom-cluster">
-                         ${dots}
                          <div class="cluster-count">
                            ${cluster.getChildCount()}
                          </div>
@@ -576,39 +562,78 @@ export default function LostAndFoundMap() {
               });
             }}
           >
-            {items
-              .filter((i) =>
+            {(() => {
+              const visibleItems = items.filter((i) =>
                 selectedCategories.includes(i.category)
-              )
-              .map((item) => (
-                <Marker
-                  key={item.id}
-                  position={[item.x, item.y]}
-                  icon={markerIcon(item.category)}
-                  ref={(ref) =>
-                    (markerRefs.current[item.id] = ref)
-                  }
-                >
-                  <Popup>
-                    <strong>{item.name}</strong>
-                    <br />
-                    {getCategoryLabel(item)}
-                    <br />
-                    {new Date(item.timestamp).toLocaleString("fa-IR")}
-                    <div className="map-popup-actions">
-                      <button
-                        type="button"
-                        className="map-popup-btn"
-                        onClick={() =>
-                          navigate(`/items/${item.id}`, { state: { item } })
-                        }
-                      >
-                        مشاهده جزئیات
-                      </button>
-                    </div>
-                  </Popup>
-                </Marker>
-              ))}
+              );
+              const grouped = new Map();
+              visibleItems.forEach((item) => {
+                const key = `${item.x?.toFixed(6)}|${item.y?.toFixed(6)}`;
+                if (!grouped.has(key)) grouped.set(key, []);
+                grouped.get(key).push(item);
+              });
+
+              return Array.from(grouped.entries()).map(([key, group]) => {
+                const [latStr, lngStr] = key.split("|");
+                const lat = Number(latStr);
+                const lng = Number(lngStr);
+                const markerItem = group[0];
+                return (
+                  <Marker
+                    key={key}
+                    position={[lat, lng]}
+                    icon={markerIcon(markerItem.category, group.length)}
+                  >
+                    <Popup>
+                      {group.length === 1 ? (
+                        <>
+                          <strong>{markerItem.name}</strong>
+                          <br />
+                          {getCategoryLabel(markerItem)}
+                          <br />
+                          {new Date(markerItem.timestamp).toLocaleString("fa-IR")}
+                          <div className="map-popup-actions">
+                            <button
+                              type="button"
+                              className="map-popup-btn"
+                              onClick={() =>
+                                navigate(`/items/${markerItem.id}`, { state: { item: markerItem } })
+                              }
+                            >
+                              مشاهده جزئیات
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="map-popup-list">
+                          <div className="map-popup-list__title">
+                            {group.length} مورد در این موقعیت
+                          </div>
+                          <div className="map-popup-list__items">
+                            {group.map((item) => (
+                              <button
+                                key={item.id}
+                                type="button"
+                                className="map-popup-list__item"
+                                onClick={() =>
+                                  navigate(`/items/${item.id}`, { state: { item } })
+                                }
+                              >
+                                <div className="map-popup-list__name">{item.name}</div>
+                                <div className="map-popup-list__meta">
+                                  {getCategoryLabel(item)} •{" "}
+                                  {new Date(item.timestamp).toLocaleString("fa-IR")}
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </Popup>
+                  </Marker>
+                );
+              });
+            })()}
           </MarkerClusterGroup>
 
           {userOutOfBounds ? (
