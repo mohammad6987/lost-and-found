@@ -156,6 +156,7 @@ export default function AddItemPage() {
   const [profile, setProfile] = useState("");
   const [notes, setNotes] = useState("");
   const [imageFile, setImageFile] = useState(null);
+  const [imageBase64, setImageBase64] = useState("");
   const [imagePreview, setImagePreview] = useState("");
   const [x, setX] = useState("");
   const [y, setY] = useState("");
@@ -168,16 +169,6 @@ export default function AddItemPage() {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
-
-  useEffect(() => {
-    if (!imageFile) {
-      setImagePreview("");
-      return;
-    }
-    const url = URL.createObjectURL(imageFile);
-    setImagePreview(url);
-    return () => URL.revokeObjectURL(url);
-  }, [imageFile]);
 
   useEffect(() => {
     const xParam = searchParams.get("x");
@@ -243,6 +234,7 @@ export default function AddItemPage() {
       category_name: category,
       longitude: hasCoords ? clamped.lng : null,
       latitude: hasCoords ? clamped.lat : null,
+      image: imageBase64 || undefined,
     };
 
     try {
@@ -252,6 +244,7 @@ export default function AddItemPage() {
       setProfile("");
       setNotes("");
       setImageFile(null);
+      setImageBase64("");
       setImagePreview("");
       setX("");
       setY("");
@@ -525,6 +518,23 @@ export default function AddItemPage() {
                       onChange={(e) => {
                         const file = e.target.files?.[0] || null;
                         setImageFile(file);
+                        if (!file) {
+                          setImagePreview("");
+                          setImageBase64("");
+                          return;
+                        }
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          const result = String(reader.result || "");
+                          setImagePreview(result);
+                          const commaIndex = result.indexOf(",");
+                          setImageBase64(commaIndex >= 0 ? result.slice(commaIndex + 1) : result);
+                        };
+                        reader.onerror = () => {
+                          setImagePreview("");
+                          setImageBase64("");
+                        };
+                        reader.readAsDataURL(file);
                       }}
                     />
                     {imagePreview ? (

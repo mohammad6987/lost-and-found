@@ -34,20 +34,11 @@ export default function EditItemPage() {
   const [category, setCategory] = useState("");
   const [notes, setNotes] = useState("");
   const [imageFile, setImageFile] = useState(null);
+  const [imageBase64, setImageBase64] = useState("");
   const [imagePreview, setImagePreview] = useState("");
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [saveError, setSaveError] = useState("");
-
-  useEffect(() => {
-    if (!imageFile) {
-      setImagePreview("");
-      return;
-    }
-    const url = URL.createObjectURL(imageFile);
-    setImagePreview(url);
-    return () => URL.revokeObjectURL(url);
-  }, [imageFile]);
 
   if (!item) {
     return (
@@ -139,6 +130,23 @@ export default function EditItemPage() {
                   onChange={(e) => {
                     const file = e.target.files?.[0] || null;
                     setImageFile(file);
+                    if (!file) {
+                      setImagePreview("");
+                      setImageBase64("");
+                      return;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                      const result = String(reader.result || "");
+                      setImagePreview(result);
+                      const commaIndex = result.indexOf(",");
+                      setImageBase64(commaIndex >= 0 ? result.slice(commaIndex + 1) : result);
+                    };
+                    reader.onerror = () => {
+                      setImagePreview("");
+                      setImageBase64("");
+                    };
+                    reader.readAsDataURL(file);
                   }}
                   disabled={!isEditable}
                 />
@@ -159,17 +167,12 @@ export default function EditItemPage() {
                     setSaving(true);
                     const trimmedName = name.trim();
                     const trimmedNotes = notes.trim();
-                    const payload = imageFile ? new FormData() : {
+                    const payload = {
                       name: trimmedName || undefined,
                       category: category || undefined,
                       notes: trimmedNotes || undefined,
+                      image: imageBase64 || undefined,
                     };
-                    if (imageFile) {
-                      if (trimmedName) payload.append("name", trimmedName);
-                      if (category) payload.append("category", category);
-                      if (trimmedNotes) payload.append("notes", trimmedNotes);
-                      payload.append("image", imageFile);
-                    }
                     try {
                       await patchItemById(item.id, payload);
                       nav("/items");
