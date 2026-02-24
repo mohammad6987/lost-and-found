@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { UI_TEXT } from "../../Components/ItemUi/textFormat";
 import { THEME } from "./itemTheme";
@@ -6,7 +6,7 @@ import FieldBlock from "../../Components/ItemUi/FieldBlock";
 import { MOCK_ITEMS } from "../../mock/mockItems";
 import "./ItemPages.css";
 import { useAuth } from "../../context/AuthContext";
-import { patchItemById } from "../../services/api";
+import { deleteItemById, patchItemById } from "../../services/api";
 
 const CATEGORY_OPTIONS = [
   { value: "", label: "یک دسته‌بندی انتخاب کنید..." },
@@ -33,8 +33,21 @@ export default function EditItemPage() {
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
   const [notes, setNotes] = useState("");
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState("");
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [saveError, setSaveError] = useState("");
+
+  useEffect(() => {
+    if (!imageFile) {
+      setImagePreview("");
+      return;
+    }
+    const url = URL.createObjectURL(imageFile);
+    setImagePreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [imageFile]);
 
   if (!item) {
     return (
@@ -116,19 +129,47 @@ export default function EditItemPage() {
                 />
               </FieldBlock>
 
-              <div className="d-flex justify-content-center gap-2 item-edit__actions">
+              <FieldBlock title="تصویر (اختیاری)" htmlFor="imageFile" hint="فایل تصویر را انتخاب کنید.">
+                <input
+                  id="imageFile"
+                  type="file"
+                  accept="image/*"
+                  className={`form-control ${UI_TEXT.field.className}`}
+                  style={UI_TEXT.field.style}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setImageFile(file);
+                  }}
+                  disabled={!isEditable}
+                />
+                {imagePreview ? (
+                  <div className="mt-2">
+                    <img src={imagePreview} alt="پیش‌نمایش تصویر" style={{ maxWidth: "100%", height: "auto" }} />
+                  </div>
+                ) : null}
+              </FieldBlock>
+
+              <div className="d-flex justify-content-center gap-5 item-edit__actions">
                 <button
                   className="btn px-4 item-edit__submit-btn"
-                  disabled={!isEditable || saving}
+                  disabled={!isEditable || saving || deleting}
                   onClick={async () => {
-                    if (!isEditable || saving) return;
+                    if (!isEditable || saving || deleting) return;
                     setSaveError("");
                     setSaving(true);
-                    const payload = {
-                      name: name.trim() || undefined,
+                    const trimmedName = name.trim();
+                    const trimmedNotes = notes.trim();
+                    const payload = imageFile ? new FormData() : {
+                      name: trimmedName || undefined,
                       category: category || undefined,
-                      notes: notes.trim() || undefined,
+                      notes: trimmedNotes || undefined,
                     };
+                    if (imageFile) {
+                      if (trimmedName) payload.append("name", trimmedName);
+                      if (category) payload.append("category", category);
+                      if (trimmedNotes) payload.append("notes", trimmedNotes);
+                      payload.append("image", imageFile);
+                    }
                     try {
                       await patchItemById(item.id, payload);
                       nav("/items");
@@ -140,6 +181,28 @@ export default function EditItemPage() {
                   }}
                 >
                   {saving ? "در حال ذخیره..." : "ذخیره تغییرات"}
+                </button>
+
+                <button
+                  className="btn btn-outline-danger px-5 item-edit__delete-btn"
+                  disabled={!isEditable || saving || deleting}
+                  onClick={async () => {
+                    if (!isEditable || saving || deleting) return;
+                    const confirmed = window.confirm("آیا از حذف این شیء مطمئن هستید؟");
+                    if (!confirmed) return;
+                    setSaveError("");
+                    setDeleting(true);
+                    try {
+                      await deleteItemById(item.id);
+                      nav("/items");
+                    } catch (err) {
+                      setSaveError(err?.message || "خطا در حذف آیتم.");
+                    } finally {
+                      setDeleting(false);
+                    }
+                  }}
+                >
+                  {deleting ? "در حال حذف..." : "حذف شیء"}
                 </button>
 
                 <button className="btn btn-outline-secondary px-4 item-edit__back-btn" onClick={() => nav("/items")}>

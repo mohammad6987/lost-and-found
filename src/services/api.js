@@ -535,9 +535,55 @@ export async function createItem(payload) {
  */
 export async function patchItemById(id, payload) {
   const accessToken = getAccessToken();
+  const isFormData = payload instanceof FormData;
   const headers = {
     accept: "*/*",
-    "Content-Type": "application/json",
+  };
+
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+
+  if (!isFormData) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  const endpoint = `/api/items/${id}/`;
+
+  const response = await fetch(`${PRODUCTS_API_BASE_URL}${endpoint}`, {
+    method: "PATCH",
+    headers,
+    body: isFormData ? payload : JSON.stringify(payload),
+  });
+
+  let data;
+  try {
+    data = await response.json();
+  } catch {
+    data = {};
+  }
+
+  if (!response.ok) {
+    const error = new Error(
+      data.error || data.detail || data.message || getErrorMessage(response.status)
+    );
+    error.status = response.status;
+    error.data = data;
+    throw error;
+  }
+
+  return data;
+}
+
+/**
+ * Delete item by id
+ * Backend endpoint: DELETE /api/items/:id/
+ * @param {string|number} id
+ */
+export async function deleteItemById(id) {
+  const accessToken = getAccessToken();
+  const headers = {
+    accept: "*/*",
   };
 
   if (accessToken) {
@@ -547,10 +593,11 @@ export async function patchItemById(id, payload) {
   const endpoint = `/api/items/${id}/`;
 
   const response = await fetch(`${PRODUCTS_API_BASE_URL}${endpoint}`, {
-    method: "PATCH",
+    method: "DELETE",
     headers,
-    body: JSON.stringify(payload),
   });
+
+  if (response.status === 204) return null;
 
   let data;
   try {
