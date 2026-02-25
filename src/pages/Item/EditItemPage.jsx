@@ -8,6 +8,60 @@ import "./ItemPages.css";
 import { useAuth } from "../../context/AuthContext";
 import { deleteItemById, patchItemById } from "../../services/api";
 import { fetchCategories } from "../../services/categories";
+import { MapContainer, TileLayer, CircleMarker, useMap, useMapEvents } from "react-leaflet";
+
+const DEFAULT_CENTER = [35.702831, 51.3516];
+const MAP_DELTA = 0.0055;
+
+const MAP_BOUNDS = [
+  [DEFAULT_CENTER[0] - MAP_DELTA, DEFAULT_CENTER[1] - MAP_DELTA],
+  [DEFAULT_CENTER[0] + MAP_DELTA, DEFAULT_CENTER[1] + MAP_DELTA],
+];
+
+function clampToBounds(lat, lng, bounds) {
+  const [[south, west], [north, east]] = bounds;
+  return {
+    lat: Math.min(Math.max(lat, south), north),
+    lng: Math.min(Math.max(lng, west), east),
+  };
+}
+
+function isWithinBounds(lat, lng, bounds) {
+  const [[south, west], [north, east]] = bounds;
+  return lat >= south && lat <= north && lng >= west && lng <= east;
+}
+
+function MapViewUpdater({ center }) {
+  const map = useMap();
+
+  useEffect(() => {
+    map.setView(center, map.getZoom(), { animate: true });
+  }, [center, map]);
+
+  return null;
+}
+
+function LocationPicker({ bounds, markerPosition, onPick }) {
+  useMapEvents({
+    click(e) {
+      const { lat, lng } = e.latlng;
+      if (!isWithinBounds(lat, lng, bounds)) return;
+      onPick({ x: lat, y: lng });
+    },
+  });
+
+  return markerPosition ? (
+    <CircleMarker
+      center={markerPosition}
+      radius={7}
+      pathOptions={{
+        color: "#1fa34bff",
+        fillColor: "#f63b3bff",
+        fillOpacity: 0.85,
+      }}
+    />
+  ) : null;
+}
 
 const CATEGORY_OPTIONS = [{ value: "", label: "یک دسته‌بندی انتخاب کنید..." }];
 
@@ -33,7 +87,29 @@ export default function EditItemPage() {
   const [deleting, setDeleting] = useState(false);
   const [delivering, setDelivering] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [x, setX] = useState(item?.latitude ? String(item.latitude) : "");
+  const [y, setY] = useState(item?.longitude ? String(item.longitude) : "");
 
+  const parsedX = x.trim() === "" ? Number.NaN : Number(x);
+  const parsedY = y.trim() === "" ? Number.NaN : Number(y);
+
+  const hasCoords = Number.isFinite(parsedX) && Number.isFinite(parsedY);
+
+  const withinBounds = hasCoords
+    ? isWithinBounds(parsedX, parsedY, MAP_BOUNDS)
+    : true;
+
+  const clamped = hasCoords
+    ? clampToBounds(parsedX, parsedY, MAP_BOUNDS)
+    : { lat: DEFAULT_CENTER[0], lng: DEFAULT_CENTER[1] };
+
+  const mapCenter = hasCoords ? [clamped.lat, clamped.lng] : DEFAULT_CENTER;
+  const markerPosition = hasCoords ? [clamped.lat, clamped.lng] : null;
+
+  const locationError =
+    hasCoords && !withinBounds
+      ? "مختصات باید داخل محدوده دانشگاه باشد."
+      : null;
   useEffect(() => {
     fetchCategories()
       .then((list) => {
@@ -118,6 +194,65 @@ export default function EditItemPage() {
                   ))}
                 </select>
               </FieldBlock>
+              <FieldBlock
+                title="مکان (در محدوده دانشگاه)"
+                hint="با کلیک روی نقشه مقداردهی می‌شود و قابل ویرایش است."
+                error={locationError}
+              >
+                <div className="item-add__map">
+                  <MapContainer
+                    center={mapCenter}
+                    zoom={16}
+                    minZoom={16}
+                    maxZoom={18}
+                    maxBounds={MAP_BOUNDS}
+                    maxBoundsViscosity={1}
+                    doubleClickZoom={false}
+                    style={{ width: "100%", height: "300px" }}
+                  >
+                    <TileLayer
+                      url={import.meta.env.VITE_MAP_TILE_URL}
+                      attribution={import.meta.env.VITE_MAP_ATTRIBUTION}
+                    />
+                    <MapViewUpdater center={mapCenter} />
+                    <LocationPicker
+                      bounds={MAP_BOUNDS}
+                      markerPosition={markerPosition}
+                      onPick={({ x: nextX, y: nextY }) => {
+                        const nextClamped = clampToBounds(nextX, nextY, MAP_BOUNDS);
+                        setX(nextClamped.lat.toFixed(6));
+                        setY(nextClamped.lng.toFixed(6));
+                      }}
+                    />
+                  </MapContainer>
+                </div>
+
+                <div className="row g-3 mt-2">
+                  <div className="col-6">
+                    <label className="form-label">عرض جغرافیایی</label>
+                    <input
+                      type="number"
+                      step="0.000001"
+                      className="form-control"
+                      value={x}
+                      onChange={(e) => setX(e.target.value)}
+                      disabled={!isEditable}
+                    />
+                  </div>
+
+                  <div className="col-6">
+                    <label className="form-label">طول جغرافیایی</label>
+                    <input
+                      type="number"
+                      step="0.000001"
+                      className="form-control"
+                      value={y}
+                      onChange={(e) => setY(e.target.value)}
+                      disabled={!isEditable}
+                    />
+                  </div>
+                </div>
+              </FieldBlock>
 
               <FieldBlock title="توضیحات (اختیاری)" htmlFor="notes">
                 <textarea
@@ -184,6 +319,10 @@ export default function EditItemPage() {
                     if (category) payload.category = category;
                     if (trimmedNotes) payload.notes = trimmedNotes;
                     if (imageBase64) payload.image = imageBase64;
+                    if (hasCoords){
+                      payload.latitude = clamped.lat;
+                      payload.longitude = clamped.lng;
+                    }
                     try {
                       await patchItemById(item.id, payload);
                       nav("/items");
