@@ -94,6 +94,9 @@ export default function TopBar() {
           <Link to="/map" className="app-topbar__link">
             نقشه
           </Link>
+          <Link to="/bot" className="app-topbar__link">
+            چت‌بات
+          </Link>
           {isLoggedIn ? (
             <UserMenu />
           ) : (

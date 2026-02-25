@@ -11,6 +11,7 @@ import RecentLostItemsPage from "./pages/Item/RecentLostItemsPage";
 import EditItemPage from "./pages/Item/EditItemPage";
 import ChatPage from "./pages/Item/ChatPage";
 import ItemDetailsPage from "./pages/Item/ItemDetailsPage";
+import ChatBotPage from "./pages/Bot/ChatBotPage";
 import AppLayout from './Components/AppLayout';
 
 import Terms from './pages/Terms/Terms'
@@ -36,6 +37,7 @@ function App() {
           <Route path="/items/:id" element={<ItemDetailsPage />} />
           <Route path="/items/:id/edit" element={<EditItemPage />} />
           <Route path="/chat/:username" element={<ChatPage />} />
+          <Route path="/bot" element={<ChatBotPage />} />
         </Route>
       </Routes>
     </HashRouter>
