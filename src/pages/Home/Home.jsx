@@ -127,7 +127,7 @@ export default function Home() {
                 </Link>
               )}
               {isLoggedIn && (
-                <Link to="/items/new" className="btn btn-secondary">
+                <Link to="/add" className="btn btn-secondary">
                   <span>📝</span> ثبت شیء جدید
                 </Link>
               )}

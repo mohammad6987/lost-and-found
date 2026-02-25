@@ -616,7 +616,7 @@ export async function createItem(payload) {
     headers.Authorization = `Bearer ${accessToken}`;
   }
 
-  const endpoint = `/api/items/`;
+  const endpoint = `/api/items`;
 
   const response = await fetch(`${PRODUCTS_API_BASE_URL}${endpoint}`, {
     method: "POST",

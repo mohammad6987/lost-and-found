@@ -8,17 +8,9 @@ import PreviewLine from "../../Components/ItemUi/PreviewLine";
 import "./ItemPages.css";
 import { useAuth } from "../../context/AuthContext";
 import { createItem } from "../../services/api";
+import { fetchCategories } from "../../services/categories";
 
-const CATEGORY_OPTIONS = [
-  { value: "", label: "یک دسته‌بندی انتخاب کنید..." },
-  { value: "phones", label: "موبایل" },
-  { value: "handbags", label: "کیف دستی" },
-  { value: "wallets", label: "کیف پول" },
-  { value: "keys", label: "کلید" },
-  { value: "id_cards", label: "کارت شناسایی / دانشجویی" },
-  { value: "laptops", label: "لپ‌تاپ" },
-  { value: "other", label: "سایر" },
-];
+const CATEGORY_OPTIONS = [{ value: "", label: "یک دسته‌بندی انتخاب کنید..." }];
 
 const DEFAULT_CENTER = [35.702831, 51.3516];
 const MAP_DELTA = 0.0055;
@@ -153,6 +145,7 @@ export default function AddItemPage() {
   const [type, setType] = useState("lost");
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
+  const [categories, setCategories] = useState(CATEGORY_OPTIONS);
   const [profile, setProfile] = useState("");
   const [notes, setNotes] = useState("");
   const [imageFile, setImageFile] = useState(null);
@@ -168,6 +161,23 @@ export default function AddItemPage() {
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    fetchCategories()
+      .then((list) => {
+        const opts = [
+          { value: "", label: "یک دسته‌بندی انتخاب کنید..." },
+          ...list.map((cat) => ({
+            value: String(cat.id),
+            label: cat.name,
+          })),
+        ];
+        setCategories(opts);
+      })
+      .catch(() => {
+        setCategories(CATEGORY_OPTIONS);
+      });
   }, []);
 
   useEffect(() => {
@@ -256,7 +266,7 @@ export default function AddItemPage() {
   }
 
   const categoryLabel =
-    CATEGORY_OPTIONS.find((c) => c.value === category)?.label ||
+    categories.find((c) => c.value === category)?.label ||
     (category ? category : "—");
   const locationLabel = useMemo(() => {
     if (!hasCoords) return "—";
@@ -380,7 +390,7 @@ export default function AddItemPage() {
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
                   >
-                    {CATEGORY_OPTIONS.map((opt) => (
+                    {categories.map((opt) => (
                       <option key={opt.value || "empty"} value={opt.value}>
                         {opt.label}
                       </option>
