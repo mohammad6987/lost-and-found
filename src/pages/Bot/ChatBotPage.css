@@ -74,6 +74,27 @@
   white-space: pre-wrap;
 }
 
+.bot-msg__bubble--loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bot-spinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(15, 23, 42, 0.15);
+  border-top-color: #16a34a;
+  animation: bot-spin 0.8s linear infinite;
+}
+
+@keyframes bot-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .bot-msg--user .bot-msg__bubble {
   background: #1d4ed8;
   color: #fff;
@@ -118,6 +139,17 @@
   border-radius: 12px;
   padding: 10px 12px;
   border: 1px solid rgba(15, 23, 42, 0.08);
+  text-align: right;
+  cursor: pointer;
+}
+
+.bot-result-card.is-found {
+  border-color: rgba(22, 163, 74, 0.4);
+  box-shadow: 0 6px 16px rgba(22, 163, 74, 0.12);
+}
+
+.bot-result-card:hover {
+  background: #f8fafc;
 }
 
 .bot-result-title {
@@ -162,8 +194,10 @@
   cursor: not-allowed;
 }
 
+
 @media (max-width: 900px) {
   .bot-body {
     grid-template-columns: 1fr;
   }
+
 }

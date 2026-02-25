@@ -126,11 +126,12 @@ export default function RecentLostItemsPage() {
 
   const recentItems = useMemo(() => {
     const nameQuery = filterName.trim().toLowerCase();
+    const typeQuery = filterType ? filterType.toLowerCase() : "";
     const fromDate = presetToDate(filterFromPreset, true);
     const toDate = presetToDate(filterToPreset, false);
     return items
       .filter((item) => {
-        if (filterType && item.type !== filterType) return false;
+        if (typeQuery && item.type !== typeQuery) return false;
         if (nameQuery && !(item.name || "").toLowerCase().includes(nameQuery)) return false;
         const createdAt = new Date(item.createdAt);
         if (fromDate && createdAt < fromDate) return false;
@@ -202,8 +203,8 @@ export default function RecentLostItemsPage() {
                         onChange={(e) => setFilterType(e.target.value)}
                       >
                         <option value="">همه</option>
-                        <option value="lost">گمشده</option>
-                        <option value="found">پیداشده</option>
+                        <option value="LOST">گمشده</option>
+                        <option value="FOUND">پیداشده</option>
                       </select>
                     </label>
                     <label className="item-list__filter-field">

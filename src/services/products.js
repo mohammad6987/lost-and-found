@@ -1,4 +1,5 @@
 import { getItemById, getProducts } from "./api";
+import { getAccessToken } from "./auth";
 
 const ITEMS_CACHE_KEY = "lf_items_cache_v1";
 const ITEMS_TTL_MS = 60 * 1000;
@@ -98,8 +99,8 @@ export function mapProductToItem(product) {
         : "نامشخص",
     timestamp: createdAt,
     createdAt,
-    type: (product?.type || "lost").toLowerCase(),
-    status: (product?.status || "active").toLowerCase(),
+    type: (product?.type || "LOST").toUpperCase(),
+    status: (product?.status || "ACTIVE").toUpperCase(),
     relatedProfile: reporterEmail,
     applicantName: reporterName,
     reporterId,
@@ -137,9 +138,10 @@ export async function fetchItemsByLocation({
   from,
   to,
 } = {}) {
+  const accessToken = getAccessToken?.() || null;
   const params = new URLSearchParams();
   if (name) params.set("name", name);
-  if (type) params.set("type", type);
+  if (type) params.set("type", String(type).toUpperCase());
   if (from) params.set("from", from);
   if (to) params.set("to", to);
   const hasLocation =
@@ -152,7 +154,10 @@ export async function fetchItemsByLocation({
   const endpoint = `/api/items/search/location?${params.toString()}`;
   const response = await fetch(`${PRODUCTS_API_BASE_URL}${endpoint}`, {
     method: "GET",
-    headers: { accept: "application/json" },
+    headers: {
+      accept: "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok || data?.success === false) {

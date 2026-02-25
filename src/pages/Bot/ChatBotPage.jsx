@@ -1,12 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 import { createChatSession, sendChatMessage } from "../../services/metis";
 import { fetchItemsByLocation } from "../../services/products";
+import Modal from "../../Components/ItemUi/Modal";
+import PreviewLine from "../../Components/ItemUi/PreviewLine";
 import "./ChatBotPage.css";
+import "../Item/ItemPages.css";
 
 const BOT_ID = import.meta.env.VITE_METIS_BOT_ID || "1252a9cc-58fb-43d7-a8b8-386bca1466f9";
 const RATE_KEY = "lf_bot_rate_v1";
 const SESSION_KEY = "lf_bot_session_v1";
+const SESSION_TTL_MS = 5 * 60 * 1000;
 
 const SYSTEM_INSTRUCTION = `
 You are a strict parameter extractor for a Lost & Found search assistant.
@@ -15,7 +20,7 @@ You DO NOT call any API. You only return parameters for the frontend to use.
 API: GET /api/items/search/location
 Valid parameters:
 - name: string (partial match, case-insensitive)
-- type: "lost" | "found"
+- type: "LOST" | "FOUND"
 - from: ISO 8601 datetime (created_at >= from)
 - to: ISO 8601 datetime (created_at <= to)
 - lat, lon, radiusKm: location trio (optional, but if any is provided, all three MUST be provided)
@@ -26,7 +31,7 @@ A) If enough info:
 {
   "params": {
     "name": "...",
-    "type": "lost",
+    "type": "LOST",
     "from": "...",
     "to": "...",
     "lat": 0.0,
@@ -97,6 +102,8 @@ function safeParseJson(text) {
 
 export default function ChatBotPage() {
   const { user } = useAuth();
+  const nav = useNavigate();
+  const [selected, setSelected] = useState(null);
   const [messages, setMessages] = useState([
     { role: "assistant", content: "سلام! چی می‌خوای جستجو کنم؟" },
   ]);
@@ -113,11 +120,64 @@ export default function ChatBotPage() {
     }
   }, [messages, items, loadingItems]);
 
+  function getImageSrc(value) {
+    if (!value || typeof value !== "string") return "";
+    const trimmed = value.trim();
+    if (!trimmed) return "";
+    if (trimmed.startsWith("data:image/")) return trimmed;
+    if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed;
+    if (trimmed.startsWith("/") && trimmed.length < 200) return trimmed;
+
+    const base = trimmed.startsWith("data:image/")
+      ? trimmed.split(",").slice(1).join(",")
+      : trimmed;
+    if (base.includes("\\x") || base.includes("\\")) {
+      const bytes = [];
+      const src = base.replace(/^data:image\/\w+;base64,/, "");
+      for (let i = 0; i < src.length; i++) {
+        const ch = src[i];
+        if (ch === "\\" && src[i + 1] === "x") {
+          const hex = src.slice(i + 2, i + 4);
+          if (/^[0-9a-fA-F]{2}$/.test(hex)) {
+            bytes.push(parseInt(hex, 16));
+            i += 3;
+            continue;
+          }
+        }
+        bytes.push(src.charCodeAt(i) & 0xff);
+      }
+      const binary = String.fromCharCode(...bytes);
+      const b64 = btoa(binary);
+      return `data:image/jpeg;base64,${b64}`;
+    }
+
+    let mime = "image/jpeg";
+    if (trimmed.startsWith("iVBOR")) mime = "image/png";
+    if (trimmed.startsWith("R0lGOD")) mime = "image/gif";
+    if (trimmed.startsWith("UklGR")) mime = "image/webp";
+    return `data:${mime};base64,${trimmed}`;
+  }
+
   async function ensureSession() {
-    const stored = sessionStorage.getItem(SESSION_KEY);
-    if (stored) return stored;
-    const session = await createChatSession(BOT_ID, user?.email ? { id: user.email, name: user.name || user.email } : undefined);
-    sessionStorage.setItem(SESSION_KEY, session.id);
+    const storedRaw = sessionStorage.getItem(SESSION_KEY);
+    if (storedRaw) {
+      try {
+        const parsed = JSON.parse(storedRaw);
+        if (parsed?.id && parsed?.ts && Date.now() - parsed.ts < SESSION_TTL_MS) {
+          return parsed.id;
+        }
+      } catch {
+        // ignore and recreate
+      }
+    }
+    const session = await createChatSession(
+      BOT_ID,
+      user?.email ? { id: user.email, name: user.name || user.email } : undefined
+    );
+    sessionStorage.setItem(
+      SESSION_KEY,
+      JSON.stringify({ id: session.id, ts: Date.now() })
+    );
     return session.id;
   }
 
@@ -148,6 +208,9 @@ export default function ChatBotPage() {
       if (!params) {
         setError("پاسخ ربات قابل پردازش نیست.");
         return;
+      }
+      if (params.type) {
+        params.type = String(params.type).toUpperCase();
       }
       setLoadingItems(true);
       const results = await fetchItemsByLocation(params);
@@ -181,6 +244,14 @@ export default function ChatBotPage() {
                 <div className="bot-msg__bubble">{m.content}</div>
               </div>
             ))}
+            {sending ? (
+              <div className="bot-msg bot-msg--assistant">
+                <div className="bot-msg__bubble bot-msg__bubble--loading">
+                  <span className="bot-spinner" />
+                  <span>در حال دریافت پاسخ...</span>
+                </div>
+              </div>
+            ) : null}
             {error ? <div className="bot-error">{error}</div> : null}
           </div>
 
@@ -188,14 +259,22 @@ export default function ChatBotPage() {
             <div className="bot-results__header">نتایج</div>
             <div className="bot-results__meta">{resultsLabel}</div>
             <div className="bot-results__list">
-              {items.map((item) => (
-                <div key={item.id} className="bot-result-card">
-                  <div className="bot-result-title">{item.name || "—"}</div>
-                  <div className="bot-result-meta">
-                    {item.categoryLabel || item.category || "—"} • {item.type === "lost" ? "گمشده" : "پیداشده"}
-                  </div>
-                </div>
-              ))}
+              {items.map((item) => {
+                const isFound = item.type === "FOUND" || item.type === "found";
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={`bot-result-card ${isFound ? "is-found" : ""}`}
+                    onClick={() => setSelected(item)}
+                  >
+                    <div className="bot-result-title">{item.name || "—"}</div>
+                    <div className="bot-result-meta">
+                      {item.categoryLabel || item.category || "—"} • {isFound ? "پیداشده" : "گمشده"}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -212,6 +291,59 @@ export default function ChatBotPage() {
           </button>
         </div>
       </div>
+
+      {selected ? (
+        <Modal title="جزئیات شیء" onClose={() => setSelected(null)}>
+          <div className="item-detail__grid">
+            {getImageSrc(selected.image || selected.raw?.image || "") ? (
+              <div className="item-detail__image">
+                <img
+                  src={getImageSrc(selected.image || selected.raw?.image || "")}
+                  alt={selected.name || "item"}
+                />
+              </div>
+            ) : (
+              <div className="item-detail__image item-detail__image--empty">
+                تصویر موجود نیست
+              </div>
+            )}
+            <div className="item-detail__info">
+              <PreviewLine
+                label="نوع"
+                value={selected.type === "FOUND" || selected.type === "found" ? "پیداشده" : "گمشده"}
+              />
+              <div className="border-top" />
+              <PreviewLine label="نام" value={selected.name || "—"} />
+              <div className="border-top" />
+              <PreviewLine
+                label="دسته‌بندی"
+                value={selected.categoryLabel || selected.category || "—"}
+              />
+              <div className="border-top" />
+              <PreviewLine label="پروفایل مرتبط" value={selected.relatedProfile || "—"} />
+              <div className="border-top" />
+              <PreviewLine label="زمان ثبت" value={selected.createdAt || "—"} />
+              <div className="border-top" />
+              <PreviewLine label="توضیحات" value={selected.description?.trim() || "—"} />
+            </div>
+          </div>
+
+          <div className="d-flex justify-content-end gap-2 mt-3">
+            <button
+              className="btn btn-outline-secondary px-4"
+              onClick={() => nav(`/items/${selected.id}`, { state: { item: selected } })}
+            >
+              مشاهده صفحه کامل
+            </button>
+            <button
+              className="btn btn-outline-secondary px-4"
+              onClick={() => setSelected(null)}
+            >
+              بستن
+            </button>
+          </div>
+        </Modal>
+      ) : null}
     </div>
   );
 }
