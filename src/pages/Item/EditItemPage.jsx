@@ -34,6 +34,23 @@ export default function EditItemPage() {
   const [delivering, setDelivering] = useState(false);
   const [saveError, setSaveError] = useState("");
 
+  useEffect(() => {
+    fetchCategories()
+      .then((list) => {
+        const opts = [
+          { value: "", label: "یک دسته‌بندی انتخاب کنید..." },
+          ...list.map((cat) => ({
+            value: String(cat.id),
+            label: cat.name,
+          })),
+        ];
+        setCategories(opts);
+      })
+      .catch(() => {
+        setCategories(CATEGORY_OPTIONS);
+      });
+  }, []);
+
   if (!item) {
     return (
       <div {...UI_TEXT.page} style={{ ...UI_TEXT.page.style, padding: 24 }}>
@@ -236,19 +253,3 @@ export default function EditItemPage() {
     </div>
   );
 }
-  useEffect(() => {
-    fetchCategories()
-      .then((list) => {
-        const opts = [
-          { value: "", label: "یک دسته‌بندی انتخاب کنید..." },
-          ...list.map((cat) => ({
-            value: String(cat.id),
-            label: cat.name,
-          })),
-        ];
-        setCategories(opts);
-      })
-      .catch(() => {
-        setCategories(CATEGORY_OPTIONS);
-      });
-  }, []);
