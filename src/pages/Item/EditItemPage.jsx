@@ -7,17 +7,9 @@ import { MOCK_ITEMS } from "../../mock/mockItems";
 import "./ItemPages.css";
 import { useAuth } from "../../context/AuthContext";
 import { deleteItemById, patchItemById } from "../../services/api";
+import { fetchCategories } from "../../services/categories";
 
-const CATEGORY_OPTIONS = [
-  { value: "", label: "یک دسته‌بندی انتخاب کنید..." },
-  { value: "phones", label: "موبایل" },
-  { value: "handbags", label: "کیف دستی" },
-  { value: "wallets", label: "کیف پول" },
-  { value: "keys", label: "کلید" },
-  { value: "id_cards", label: "کارت شناسایی / دانشجویی" },
-  { value: "laptops", label: "لپ‌تاپ" },
-  { value: "other", label: "سایر" },
-];
+const CATEGORY_OPTIONS = [{ value: "", label: "یک دسته‌بندی انتخاب کنید..." }];
 
 export default function EditItemPage() {
   const { id } = useParams();
@@ -36,6 +28,7 @@ export default function EditItemPage() {
   const [imageFile, setImageFile] = useState(null);
   const [imageBase64, setImageBase64] = useState("");
   const [imagePreview, setImagePreview] = useState("");
+  const [categories, setCategories] = useState(CATEGORY_OPTIONS);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [delivering, setDelivering] = useState(false);
@@ -101,7 +94,7 @@ export default function EditItemPage() {
                   onChange={(e) => setCategory(e.target.value)}
                   disabled={!isEditable}
                 >
-                  {CATEGORY_OPTIONS.map((opt) => (
+                  {categories.map((opt) => (
                     <option key={opt.value || "empty"} value={opt.value}>
                       {opt.label}
                     </option>
@@ -243,3 +236,19 @@ export default function EditItemPage() {
     </div>
   );
 }
+  useEffect(() => {
+    fetchCategories()
+      .then((list) => {
+        const opts = [
+          { value: "", label: "یک دسته‌بندی انتخاب کنید..." },
+          ...list.map((cat) => ({
+            value: String(cat.id),
+            label: cat.name,
+          })),
+        ];
+        setCategories(opts);
+      })
+      .catch(() => {
+        setCategories(CATEGORY_OPTIONS);
+      });
+  }, []);
