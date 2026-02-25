@@ -38,6 +38,7 @@ export default function EditItemPage() {
   const [imagePreview, setImagePreview] = useState("");
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [delivering, setDelivering] = useState(false);
   const [saveError, setSaveError] = useState("");
 
   if (!item) {
@@ -52,6 +53,7 @@ export default function EditItemPage() {
   const currentEmail = user?.email || "";
   const isOwner = isLoggedIn && ownerEmail && ownerEmail === currentEmail;
   const isEditable = isOwner;
+  const deliveredLabel = item?.type === "FOUND" ? "تحویل داده شد" : "پیدا شد";
 
   return (
     <div
@@ -160,9 +162,9 @@ export default function EditItemPage() {
               <div className="d-flex justify-content-center gap-5 item-edit__actions">
                 <button
                   className="btn px-4 item-edit__submit-btn"
-                  disabled={!isEditable || saving || deleting}
+                  disabled={!isEditable || saving || deleting || delivering}
                   onClick={async () => {
-                    if (!isEditable || saving || deleting) return;
+                    if (!isEditable || saving || deleting || delivering) return;
                     setSaveError("");
                     setSaving(true);
                     const trimmedName = name.trim();
@@ -186,10 +188,32 @@ export default function EditItemPage() {
                 </button>
 
                 <button
-                  className="btn btn-outline-danger px-5 item-edit__delete-btn"
-                  disabled={!isEditable || saving || deleting}
+                  className="btn btn-outline-success px-5 item-edit__delete-btn"
+                  disabled={!isEditable || saving || deleting || delivering}
                   onClick={async () => {
-                    if (!isEditable || saving || deleting) return;
+                    if (!isEditable || saving || deleting || delivering) return;
+                    const confirmed = window.confirm("آیا از ثبت وضعیت مطمئن هستید؟");
+                    if (!confirmed) return;
+                    setSaveError("");
+                    setDelivering(true);
+                    try {
+                      await patchItemById(item.id, { status: "DELIVERED" });
+                      nav("/items");
+                    } catch (err) {
+                      setSaveError(err?.message || "خطا در ثبت وضعیت تحویل.");
+                    } finally {
+                      setDelivering(false);
+                    }
+                  }}
+                >
+                  {delivering ? "در حال ثبت..." : deliveredLabel}
+                </button>
+
+                <button
+                  className="btn btn-outline-danger px-5 item-edit__delete-btn"
+                  disabled={!isEditable || saving || deleting || delivering}
+                  onClick={async () => {
+                    if (!isEditable || saving || deleting || delivering) return;
                     const confirmed = window.confirm("آیا از حذف این شیء مطمئن هستید؟");
                     if (!confirmed) return;
                     setSaveError("");

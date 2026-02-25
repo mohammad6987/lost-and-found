@@ -562,6 +562,45 @@ export async function getItemById(id) {
 }
 
 /**
+ * Report item by id
+ * Backend endpoint: POST /api/items/:id/report
+ * @param {string|number} id
+ */
+export async function reportItemById(id) {
+  const accessToken = getAccessToken();
+  const headers = {
+    accept: "*/*",
+  };
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+
+  const endpoint = `/api/items/${id}/report`;
+  const response = await fetch(`${PRODUCTS_API_BASE_URL}${endpoint}`, {
+    method: "POST",
+    headers,
+  });
+
+  let data;
+  try {
+    data = await response.json();
+  } catch {
+    data = {};
+  }
+
+  if (!response.ok) {
+    const error = new Error(
+      data.error || data.detail || data.message || getErrorMessage(response.status)
+    );
+    error.status = response.status;
+    error.data = data;
+    throw error;
+  }
+
+  return data;
+}
+
+/**
  * Create item
  * Backend endpoint: POST /api/items/
  * @param {Object} payload
@@ -625,7 +664,7 @@ export async function patchItemById(id, payload) {
     headers["Content-Type"] = "application/json";
   }
 
-  const endpoint = `/api/items/${id}/`;
+  const endpoint = `/api/items/${id}`;
 
   const response = await fetch(`${PRODUCTS_API_BASE_URL}${endpoint}`, {
     method: "PATCH",

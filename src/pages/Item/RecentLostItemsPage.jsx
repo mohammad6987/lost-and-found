@@ -252,7 +252,7 @@ export default function RecentLostItemsPage() {
       style={{ ...UI_TEXT.page.style, color: THEME.text }}
     >
       <div className="py-4 px-3 item-page__content">
-        <div className="mx-auto" style={{ width: "100%", maxWidth: 900 }}>
+        <div className="mx-auto item-list__container" style={{ width: "100%", maxWidth: 900 }}>
           <header className="text-center mb-4">
             <h1 className="h3 mb-2">اشیای اخیر</h1>
             <div className="text-muted">

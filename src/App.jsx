@@ -17,6 +17,7 @@ import AppLayout from './Components/AppLayout';
 import Terms from './pages/Terms/Terms'
 import VerifyEmail from './pages/VerifyEmail/VerifyEmail'
 import Profile from './pages/Profile/Profile'
+import PublicProfile from './pages/Profile/PublicProfile'
 function App() {
   return (
     <HashRouter>
@@ -32,6 +33,7 @@ function App() {
           <Route path="/terms" element={<Terms />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/profile/:id" element={<PublicProfile />} />
           <Route path="/add" element={<AddItemPage />} />
           <Route path="/items" element={<RecentLostItemsPage />} />
           <Route path="/items/:id" element={<ItemDetailsPage />} />

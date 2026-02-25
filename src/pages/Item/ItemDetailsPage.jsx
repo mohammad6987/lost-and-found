@@ -5,7 +5,7 @@ import { UI_TEXT } from "../../Components/ItemUi/textFormat";
 import PreviewLine from "../../Components/ItemUi/PreviewLine";
 import { THEME } from "./itemTheme";
 import { fetchItemById } from "../../services/products";
-import { getUserProfileById } from "../../services/api";
+import { getUserProfileById, reportItemById } from "../../services/api";
 import { createComment, fetchComments, reportComment } from "../../services/comments";
 import { useAuth } from "../../context/AuthContext";
 import "./ItemPages.css";
@@ -81,6 +81,9 @@ export default function ItemDetailsPage() {
   const [reporterProfile, setReporterProfile] = useState(null);
   const [reporterLoading, setReporterLoading] = useState(false);
   const [reporterError, setReporterError] = useState("");
+  const [itemReportBusy, setItemReportBusy] = useState(false);
+  const [itemReportError, setItemReportError] = useState("");
+  const [itemReportSuccess, setItemReportSuccess] = useState("");
 
   useEffect(() => {
     let mounted = true;
@@ -176,6 +179,21 @@ export default function ItemDetailsPage() {
       setCommentReportError(err?.message || "خطا در گزارش نظر.");
     } finally {
       setCommentReportBusy(false);
+    }
+  }
+
+  async function handleReportItem() {
+    if (!item?.id || itemReportBusy) return;
+    setItemReportError("");
+    setItemReportSuccess("");
+    setItemReportBusy(true);
+    try {
+      await reportItemById(item.id);
+      setItemReportSuccess("گزارش شما ثبت شد.");
+    } catch (err) {
+      setItemReportError(err?.message || "خطا در گزارش شیء.");
+    } finally {
+      setItemReportBusy(false);
     }
   }
 
@@ -306,10 +324,13 @@ export default function ItemDetailsPage() {
                     <button
                       type="button"
                       className="btn item-detail__reporter-btn"
-                      onClick={handleLoadReporter}
+                      onClick={() => {
+                        if (!item?.reporterId || reporterLoading) return;
+                        nav(`/profile/${item.reporterId}`);
+                      }}
                       disabled={!item.reporterId || reporterLoading}
                     >
-                      {reporterLoading ? "در حال دریافت..." : "مشاهده پروفایل گزارش‌دهنده"}
+                      مشاهده پروفایل گزارش‌دهنده
                     </button>
                     {reporterError ? (
                       <div className="text-danger small mt-2">{reporterError}</div>
@@ -340,15 +361,30 @@ export default function ItemDetailsPage() {
                         ویرایش شیء
                       </button>
                     ) : (
-                      <button
-                        className="btn item-detail__action-primary"
-                        onClick={handleChat}
-                        disabled={!item.relatedProfile}
-                      >
-                        تماس با صاحب شیء
-                      </button>
+                      <>
+                        <button
+                          className="btn item-detail__action-primary"
+                          onClick={handleChat}
+                          disabled={!item.relatedProfile}
+                        >
+                          تماس با صاحب شیء
+                        </button>
+                        <button
+                          className="btn btn-outline-danger"
+                          onClick={handleReportItem}
+                          disabled={!isLoggedIn || itemReportBusy}
+                        >
+                          {itemReportBusy ? "در حال گزارش..." : "گزارش شیء"}
+                        </button>
+                      </>
                     )}
                   </div>
+                  {itemReportError ? (
+                    <div className="text-danger small mt-2">{itemReportError}</div>
+                  ) : null}
+                  {itemReportSuccess ? (
+                    <div className="text-success small mt-2">{itemReportSuccess}</div>
+                  ) : null}
                 </div>
               </div>
             ) : (
