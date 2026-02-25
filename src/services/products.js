@@ -6,9 +6,9 @@ const ITEMS_TTL_MS = 60 * 1000;
 const PRODUCTS_API_BASE_URL =
   import.meta.env.VITE_PRODUCTS_API_BASE_URL || "https://sharif-lostfound.liara.run";
 
-function loadItemsCache() {
+function loadItemsCache(cacheKey) {
   try {
-    const raw = localStorage.getItem(ITEMS_CACHE_KEY);
+    const raw = localStorage.getItem(cacheKey);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (!parsed || !Array.isArray(parsed.items) || !parsed.ts) return null;
@@ -19,10 +19,10 @@ function loadItemsCache() {
   }
 }
 
-function saveItemsCache(items) {
+function saveItemsCache(cacheKey, items) {
   try {
     localStorage.setItem(
-      ITEMS_CACHE_KEY,
+      cacheKey,
       JSON.stringify({ ts: Date.now(), items })
     );
   } catch {
@@ -108,20 +108,49 @@ export function mapProductToItem(product) {
   };
 }
 
-export async function fetchProductsAsItems() {
-  const cached = loadItemsCache();
+export async function fetchProductsAsItems({ page = 0, size = 200, useCache = true } = {}) {
+  const cacheKey = `${ITEMS_CACHE_KEY}_${page}_${size}`;
+  const cached = useCache ? loadItemsCache(cacheKey) : null;
   if (cached) return cached;
 
-  const response = await getProducts();
-  const products = Array.isArray(response?.data)
-    ? response.data
-    : Array.isArray(response)
-      ? response
-      : [];
+  const response = await getProducts({ page, size });
+  const products = Array.isArray(response?.data?.items)
+    ? response.data.items
+    : Array.isArray(response?.items)
+      ? response.items
+      : Array.isArray(response?.data)
+        ? response.data
+        : Array.isArray(response)
+          ? response
+          : [];
 
   const items = products.map(mapProductToItem);
-  saveItemsCache(items);
+  if (useCache) saveItemsCache(cacheKey, items);
   return items;
+}
+
+export async function fetchProductsPage({ page = 0, size = 20, useCache = true } = {}) {
+  const cacheKey = `${ITEMS_CACHE_KEY}_page_${page}_${size}`;
+  const cached = useCache ? loadItemsCache(cacheKey) : null;
+  if (cached) {
+    return { items: cached, meta: null };
+  }
+
+  const response = await getProducts({ page, size });
+  const meta = response?.data || response || {};
+  const products = Array.isArray(meta?.items)
+    ? meta.items
+    : Array.isArray(response?.items)
+      ? response.items
+      : Array.isArray(response?.data)
+        ? response.data
+        : Array.isArray(response)
+          ? response
+          : [];
+
+  const items = products.map(mapProductToItem);
+  if (useCache) saveItemsCache(cacheKey, items);
+  return { items, meta };
 }
 
 export async function fetchItemById(id) {
@@ -129,7 +158,17 @@ export async function fetchItemById(id) {
   return mapProductToItem(data);
 }
 
-export async function fetchItemsByLocation({
+export async function fetchItemsByLocation(params = {}) {
+  const response = await fetchItemsByLocationRaw(params);
+  return response.items;
+}
+
+export async function fetchItemsByLocationPage(params = {}) {
+  const response = await fetchItemsByLocationRaw(params);
+  return response;
+}
+
+async function fetchItemsByLocationRaw({
   lat,
   lon,
   radiusKm,
@@ -137,21 +176,25 @@ export async function fetchItemsByLocation({
   type,
   from,
   to,
+  page,
+  size,
 } = {}) {
   const accessToken = getAccessToken?.() || null;
-  const params = new URLSearchParams();
-  if (name) params.set("name", name);
-  if (type) params.set("type", String(type).toUpperCase());
-  if (from) params.set("from", from);
-  if (to) params.set("to", to);
+  const search = new URLSearchParams();
+  if (name) search.set("name", name);
+  if (type) search.set("type", String(type).toUpperCase());
+  if (from) search.set("from", from);
+  if (to) search.set("to", to);
+  if (page !== undefined) search.set("page", String(page));
+  if (size !== undefined) search.set("size", String(size));
   const hasLocation =
     lat !== undefined && lon !== undefined && radiusKm !== undefined;
   if (hasLocation) {
-    params.set("lat", String(lat));
-    params.set("lon", String(lon));
-    params.set("radiusKm", String(radiusKm));
+    search.set("lat", String(lat));
+    search.set("lon", String(lon));
+    search.set("radiusKm", String(radiusKm));
   }
-  const endpoint = `/api/items/search/location?${params.toString()}`;
+  const endpoint = `/api/items/search/location?${search.toString()}`;
   const response = await fetch(`${PRODUCTS_API_BASE_URL}${endpoint}`, {
     method: "GET",
     headers: {
@@ -168,6 +211,13 @@ export async function fetchItemsByLocation({
     error.data = data;
     throw error;
   }
-  const list = Array.isArray(data?.data) ? data.data : [];
-  return list.map(mapProductToItem);
+  const meta = data?.data || data || {};
+  const list = Array.isArray(meta?.items)
+    ? meta.items
+    : Array.isArray(data?.items)
+      ? data.items
+      : Array.isArray(data?.data)
+        ? data.data
+        : [];
+  return { items: list.map(mapProductToItem), meta };
 }

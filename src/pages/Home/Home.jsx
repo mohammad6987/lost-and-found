@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { fetchProductsAsItems } from "../../services/products";
+import { getItemCounts } from "../../services/api";
 import "./Home.css";
 
 // Category config
@@ -13,11 +14,10 @@ const CATEGORIES = {
 };
 
 async function fetchRecentItems() {
-  const items = await fetchProductsAsItems();
+  const items = await fetchProductsAsItems({ page: 0, size: 4, useCache: false });
   return items
     .slice()
     .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-    .slice(0, 4)
     .map((item) => ({
       id: item.id,
       name: item.name,
@@ -28,14 +28,12 @@ async function fetchRecentItems() {
 }
 
 async function fetchStats() {
-  const items = await fetchProductsAsItems();
-  const today = new Date().toDateString();
+  const response = await getItemCounts();
+  const data = response?.data || {};
   return {
-    todayItems: items.filter(
-      (item) => new Date(item.timestamp).toDateString() === today
-    ).length,
-    totalItems: items.length,
-    resolvedItems: items.filter((item) => item.status === "matched").length,
+    todayItems: data.today_reported || 0,
+    totalItems: data.all_reported || 0,
+    resolvedItems: data.returned || 0,
   };
 }
 

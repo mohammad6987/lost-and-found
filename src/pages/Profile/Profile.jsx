@@ -329,7 +329,7 @@ export default function Profile() {
                   {userItems.map((item) => (
                     <Link key={item.id} to={`/items/${item.id}`} className="item-card">
                       <div className={`item-type ${item.type}`}>
-                        {item.type === "lost" ? "🔴 گم‌شده" : "🟢 پیداشده"}
+                        {item.type === "LOST" ? "🔴 گم‌شده" : "🟢 پیداشده"}
                       </div>
                       <div className="item-details">
                         <h4 className="item-name">{item.name}</h4>
@@ -352,4 +352,3 @@ export default function Profile() {
     </div>
   );
 }
-

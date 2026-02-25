@@ -12,7 +12,7 @@ import {
 } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-markercluster";
 import L from "leaflet";
-import { fetchItemsByLocation, fetchProductsAsItems } from "../services/products";
+import { fetchItemsByLocationPage, fetchProductsPage } from "../services/products";
 import CachedTileLayer from "./CachedTileLayer";
 
 import "leaflet/dist/leaflet.css";
@@ -337,29 +337,63 @@ export default function LostAndFoundMap() {
   const [filterApplied, setFilterApplied] = useState(false);
   const [filterBusy, setFilterBusy] = useState(false);
   const [filterError, setFilterError] = useState("");
+  const [page, setPage] = useState(0);
+  const [size] = useState(50);
+  const [hasNext, setHasNext] = useState(false);
+  const [totalPages, setTotalPages] = useState(0);
   const hasShownBoundsAlert = useRef(false);
 
   const markerRefs = useRef({});
 
-  useEffect(() => {
+  async function loadMapPage({ nextPage = page, useFilter = filterApplied } = {}) {
     setLoadingItems(true);
-    fetchProductsAsItems()
-      .then((apiItems) => {
-        const mapItems = apiItems.filter(
-          (item) =>
-            typeof item.x === "number" &&
-            typeof item.y === "number"
-        );
-        setItems(mapItems);
-        setSelectedCategories(
-          Array.from(
-            new Set(mapItems.map((item) => item.category).filter(Boolean))
-          )
-        );
-      })
-      .catch((err) => console.error(err))
-      .finally(() => setLoadingItems(false));
-  }, []);
+    try {
+      let apiItems = [];
+      let meta = {};
+      if (useFilter) {
+        const fromIso = toPresetIso(filterFromPreset, true);
+        const toIso = toPresetIso(filterToPreset, false);
+        const diameterM = Number(filterDiameterM);
+        const radiusKm = diameterM / 2000;
+        const needsLocation = filterLocationMode === "around_pin";
+        const response = await fetchItemsByLocationPage({
+          lat: needsLocation ? filterCenter.lat : undefined,
+          lon: needsLocation ? filterCenter.lng : undefined,
+          radiusKm: needsLocation ? radiusKm : undefined,
+          name: filterName.trim() || undefined,
+          type: filterType || undefined,
+          from: fromIso || undefined,
+          to: toIso || undefined,
+          page: nextPage,
+          size,
+        });
+        apiItems = response.items || [];
+        meta = response.meta || {};
+      } else {
+        const response = await fetchProductsPage({ page: nextPage, size });
+        apiItems = response.items || [];
+        meta = response.meta || {};
+      }
+
+      const mapItems = apiItems.filter(
+        (item) => typeof item.x === "number" && typeof item.y === "number"
+      );
+      setItems(mapItems);
+      setHasNext(Boolean(meta?.hasNext));
+      setTotalPages(meta?.totalPages || 0);
+      setSelectedCategories(
+        Array.from(new Set(mapItems.map((item) => item.category).filter(Boolean)))
+      );
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingItems(false);
+    }
+  }
+
+  useEffect(() => {
+    loadMapPage({ nextPage: page, useFilter: filterApplied });
+  }, [page, size, filterApplied]);
 
   const isInBounds = (lat, lng) => {
     const [[south, west], [north, east]] = bounds;
@@ -424,34 +458,16 @@ export default function LostAndFoundMap() {
     const radiusKm = diameterM / 2000;
     setFilterError("");
     setFilterBusy(true);
-    setLoadingItems(true);
     try {
-      const fromIso = toPresetIso(filterFromPreset, true);
-      const toIso = toPresetIso(filterToPreset, false);
-      const apiItems = await fetchItemsByLocation({
-        lat: needsLocation ? filterCenter.lat : undefined,
-        lon: needsLocation ? filterCenter.lng : undefined,
-        radiusKm: needsLocation ? radiusKm : undefined,
-        name: filterName.trim() || undefined,
-        type: filterType || undefined,
-        from: fromIso || undefined,
-        to: toIso || undefined,
-      });
-      const mapItems = apiItems.filter(
-        (item) => typeof item.x === "number" && typeof item.y === "number"
-      );
-      setItems(mapItems);
-      setSelectedCategories(
-        Array.from(new Set(mapItems.map((item) => item.category).filter(Boolean)))
-      );
-      setSelectedId(null);
       setFilterApplied(true);
       setFilterPickMode(false);
+      setPage(0);
+      await loadMapPage({ nextPage: 0, useFilter: true });
+      setSelectedId(null);
     } catch (err) {
       setFilterError(err?.message || "خطا در جستجوی مکانی.");
     } finally {
       setFilterBusy(false);
-      setLoadingItems(false);
     }
   }
 
@@ -460,21 +476,12 @@ export default function LostAndFoundMap() {
     setFilterError("");
     setFilterApplied(false);
     setFilterPickMode(false);
-    setLoadingItems(true);
     try {
-      const apiItems = await fetchProductsAsItems();
-      const mapItems = apiItems.filter(
-        (item) => typeof item.x === "number" && typeof item.y === "number"
-      );
-      setItems(mapItems);
-      setSelectedCategories(
-        Array.from(new Set(mapItems.map((item) => item.category).filter(Boolean)))
-      );
+      setPage(0);
+      await loadMapPage({ nextPage: 0, useFilter: false });
       setSelectedId(null);
     } catch (err) {
       setFilterError(err?.message || "خطا در دریافت آیتم‌ها.");
-    } finally {
-      setLoadingItems(false);
     }
   }
 
@@ -681,6 +688,27 @@ export default function LostAndFoundMap() {
 
           {selectedItem && <FlyToMarker item={selectedItem} />}
         </MapContainer>
+        <div className="map-pagination">
+          <button
+            type="button"
+            className="map-pagination__btn"
+            disabled={loadingItems || page === 0}
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+          >
+            قبلی
+          </button>
+          <span className="map-pagination__label">
+            صفحه {page + 1} از {Math.max(totalPages, 1)}
+          </span>
+          <button
+            type="button"
+            className="map-pagination__btn"
+            disabled={loadingItems || !hasNext}
+            onClick={() => setPage((p) => p + 1)}
+          >
+            بعدی
+          </button>
+        </div>
       </div>
 
     </div>

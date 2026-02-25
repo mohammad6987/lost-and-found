@@ -1,11 +1,11 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { UI_TEXT } from "../../Components/ItemUi/textFormat";
 import { THEME } from "./itemTheme";
 import Modal from "../../Components/ItemUi/Modal";
 import PreviewLine from "../../Components/ItemUi/PreviewLine";
 import { useAuth } from "../../context/AuthContext";
-import { fetchProductsAsItems } from "../../services/products";
+import { fetchItemById, fetchProductsPage } from "../../services/products";
 import "./ItemPages.css";
 
 const CATEGORY_LABELS = {
@@ -92,23 +92,63 @@ export default function RecentLostItemsPage() {
   const [selected, setSelected] = useState(null);
   const [items, setItems] = useState([]);
   const [loadingItems, setLoadingItems] = useState(true);
+  const [page, setPage] = useState(0);
+  const [size] = useState(10);
+  const [hasNext, setHasNext] = useState(false);
+  const [totalPages, setTotalPages] = useState(0);
   const [filterName, setFilterName] = useState("");
   const [filterType, setFilterType] = useState("");
   const [filterFromPreset, setFilterFromPreset] = useState("any");
   const [filterToPreset, setFilterToPreset] = useState("any");
+  const hydratedIdsRef = useRef(new Set());
   const { user } = useAuth();
   const currentUserEmail = user?.email || "";
 
   useEffect(() => {
     setLoadingItems(true);
-    fetchProductsAsItems()
-      .then(setItems)
+    fetchProductsPage({ page, size })
+      .then(({ items: nextItems, meta }) => {
+        setItems(nextItems);
+        setHasNext(Boolean(meta?.hasNext));
+        setTotalPages(meta?.totalPages || 0);
+      })
       .catch((err) => {
         console.error(err);
         setItems([]);
+        setHasNext(false);
+        setTotalPages(0);
       })
       .finally(() => setLoadingItems(false));
-  }, []);
+  }, [page, size]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function hydrateImages() {
+      const missing = items.filter((item) => !item.image && !hydratedIdsRef.current.has(item.id));
+      if (missing.length === 0) return;
+      const updates = await Promise.all(
+        missing.map(async (item) => {
+          hydratedIdsRef.current.add(item.id);
+          try {
+            const full = await fetchItemById(item.id);
+            return full?.image ? { id: item.id, image: full.image, raw: full.raw } : null;
+          } catch {
+            return null;
+          }
+        })
+      );
+      if (cancelled) return;
+      const map = new Map(updates.filter(Boolean).map((u) => [u.id, u]));
+      if (map.size === 0) return;
+      setItems((prev) =>
+        prev.map((item) => (map.has(item.id) ? { ...item, ...map.get(item.id) } : item))
+      );
+    }
+    hydrateImages();
+    return () => {
+      cancelled = true;
+    };
+  }, [items]);
 
   function presetToDate(preset, isFrom) {
     if (!preset || preset === "any") return null;
@@ -126,7 +166,7 @@ export default function RecentLostItemsPage() {
 
   const recentItems = useMemo(() => {
     const nameQuery = filterName.trim().toLowerCase();
-    const typeQuery = filterType ? filterType.toLowerCase() : "";
+    const typeQuery = filterType ? filterType.toUpperCase() : "";
     const fromDate = presetToDate(filterFromPreset, true);
     const toDate = presetToDate(filterToPreset, false);
     return items
@@ -254,14 +294,22 @@ export default function RecentLostItemsPage() {
                 <div className="list-group list-group-flush item-list">
                   {recentItems.map((item) => {
                     const isOwner = item.relatedProfile === currentUserEmail;
-                    const isLost = item.type === "lost";
+                    const isLost = item.type === "LOST";
                     const rowImageSrc = getImageSrc(item.image || item.raw?.image || "");
                     return (
-                      <button
+                      <div
                         key={item.id}
                         className="list-group-item list-group-item-action item-list__row"
                         onClick={() => openItem(item)}
                         style={{ ...UI_TEXT.page.style }}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            openItem(item);
+                          }
+                        }}
                       >
                         <div className="d-flex align-items-center justify-content-between gap-3 item-list__row-inner">
                           <div className="d-flex align-items-center gap-3 item-list__meta">
@@ -301,12 +349,32 @@ export default function RecentLostItemsPage() {
                             ) : null}
                           </div>
                         </div>
-                      </button>
+                      </div>
                     );
                   })}
                 </div>
-                
               )}
+            </div>
+            <div className="item-list__pagination">
+              <button
+                type="button"
+                className="btn btn-outline-secondary"
+                disabled={loadingItems || page === 0}
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+              >
+                قبلی
+              </button>
+              <span className="text-muted">
+                صفحه {page + 1} از {Math.max(totalPages, 1)}
+              </span>
+              <button
+                type="button"
+                className="btn btn-outline-secondary"
+                disabled={loadingItems || !hasNext}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                بعدی
+              </button>
             </div>
 <div
   className="d-flex justify-content-center py-3"
@@ -341,7 +409,7 @@ export default function RecentLostItemsPage() {
                   </div>
                 )}
                 <div className="item-detail__info">
-                  <PreviewLine label="نوع" value={selected.type === "lost" ? "گمشده" : "پیداشده"} />
+                  <PreviewLine label="نوع" value={selected.type === "LOST" ? "گمشده" : "پیداشده"} />
                   <div className="border-top" />
                   <PreviewLine label="نام" value={selected.name || "—"} />
                   <div className="border-top" />

@@ -400,7 +400,7 @@ export async function getUserProfileById(userId) {
  * Backend endpoint: GET /api/product
  * Fallback: GET /api/product
  */
-export async function getProducts() {
+export async function getProducts({ page = 0, size = 50 } = {}) {
   const accessToken = getAccessToken();
   const headers = {
     accept: "*/*",
@@ -410,7 +410,8 @@ export async function getProducts() {
     headers.Authorization = `Bearer ${accessToken}`;
   }
 
-  const tryEndpoints = [ "/api/items"];
+  const query = `?page=${page}&size=${size}`;
+  const tryEndpoints = [ `/api/items${query}`];
   let lastError = null;
 
   for (const endpoint of tryEndpoints) {
@@ -441,11 +442,49 @@ export async function getProducts() {
       lastError = error;
       if (error?.status !== 404) {
         break;
-  }
-}
+      }
+    }
   }
 
   throw lastError || new Error("Failed to fetch products.");
+}
+
+/**
+ * Get items counts
+ * Backend endpoint: GET /api/items/counts
+ */
+export async function getItemCounts() {
+  const accessToken = getAccessToken();
+  const headers = {
+    accept: "*/*",
+  };
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+
+  const endpoint = `/api/items/counts`;
+  const response = await fetch(`${PRODUCTS_API_BASE_URL}${endpoint}`, {
+    method: "GET",
+    headers,
+  });
+
+  let data;
+  try {
+    data = await response.json();
+  } catch {
+    data = {};
+  }
+
+  if (!response.ok) {
+    const error = new Error(
+      data.error || data.detail || data.message || getErrorMessage(response.status)
+    );
+    error.status = response.status;
+    error.data = data;
+    throw error;
+  }
+
+  return data;
 }
 
 export async function getItemById(id) {

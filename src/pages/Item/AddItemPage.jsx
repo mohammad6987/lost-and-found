@@ -229,7 +229,7 @@ export default function AddItemPage() {
     const payload = {
       name: name.trim(),
       description: notes.trim() || "",
-      type,
+      type: type.toUpperCase(),
       status: "Active",
       category_name: category,
       longitude: hasCoords ? clamped.lng : null,

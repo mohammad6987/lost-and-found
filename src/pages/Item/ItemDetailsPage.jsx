@@ -296,7 +296,7 @@ export default function ItemDetailsPage() {
                 </div>
 
                 <div className="item-detail__info">
-                  <PreviewLine label="نوع" value={item.type === "lost" ? "گمشده" : "پیداشده"} />
+                  <PreviewLine label="نوع" value={item.type === "LOST" ? "گمشده" : "پیداشده"} />
                   <div className="border-top" />
                   <PreviewLine label="نام" value={item.name || "—"} />
                   <div className="border-top" />
