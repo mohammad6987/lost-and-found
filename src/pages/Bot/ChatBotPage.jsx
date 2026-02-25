@@ -21,6 +21,7 @@ API: GET /api/items/search/location
 Valid parameters:
 - name: string (partial match, case-insensitive)
 - type: "LOST" | "FOUND"
+- categoryIds: comma-separated list (e.g., "1,2,3")
 - from: ISO 8601 datetime (created_at >= from)
 - to: ISO 8601 datetime (created_at <= to)
 - lat, lon, radiusKm: location trio (optional, but if any is provided, all three MUST be provided)
@@ -32,6 +33,7 @@ A) If enough info:
   "params": {
     "name": "...",
     "type": "LOST",
+    "categoryIds": "1,2",
     "from": "...",
     "to": "...",
     "lat": 0.0,
@@ -59,6 +61,7 @@ Rules:
 7) If no meaningful filter is present, ask what to search for.
 8) “name” should be the object keyword (e.g., “wallet”, “phone”) even if user says “find my wallet”.
 9) Keep numeric precision reasonable (up to 6 decimals for lat/lon).
+10) If user mentions category IDs explicitly, include categoryIds. Otherwise omit it.
 `;
 
 function getRateState() {
@@ -211,6 +214,13 @@ export default function ChatBotPage() {
       }
       if (params.type) {
         params.type = String(params.type).toUpperCase();
+      }
+      if (params.categoryIds) {
+        if (Array.isArray(params.categoryIds)) {
+          params.categoryIds = params.categoryIds.join(",");
+        } else {
+          params.categoryIds = String(params.categoryIds);
+        }
       }
       setLoadingItems(true);
       const results = await fetchItemsByLocation(params);

@@ -487,6 +487,44 @@ export async function getItemCounts() {
   return data;
 }
 
+/**
+ * Get categories
+ * Backend endpoint: GET /api/items/categories
+ */
+export async function getCategories() {
+  const accessToken = getAccessToken();
+  const headers = {
+    accept: "*/*",
+  };
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+
+  const endpoint = `/api/items/categories`;
+  const response = await fetch(`${PRODUCTS_API_BASE_URL}${endpoint}`, {
+    method: "GET",
+    headers,
+  });
+
+  let data;
+  try {
+    data = await response.json();
+  } catch {
+    data = {};
+  }
+
+  if (!response.ok) {
+    const error = new Error(
+      data.error || data.detail || data.message || getErrorMessage(response.status)
+    );
+    error.status = response.status;
+    error.data = data;
+    throw error;
+  }
+
+  return data;
+}
+
 export async function getItemById(id) {
   const accessToken = getAccessToken();
   const headers = {

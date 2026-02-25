@@ -5,19 +5,11 @@ import { THEME } from "./itemTheme";
 import Modal from "../../Components/ItemUi/Modal";
 import PreviewLine from "../../Components/ItemUi/PreviewLine";
 import { useAuth } from "../../context/AuthContext";
-import { fetchItemById, fetchProductsPage } from "../../services/products";
+import { fetchItemById, fetchItemsByLocationPage, fetchProductsPage } from "../../services/products";
+import { fetchCategories } from "../../services/categories";
 import "./ItemPages.css";
 
-const CATEGORY_LABELS = {
-  electronics: "الکترونیک",
-  documents: "مدارک",
-  accessories: "اکسسوری",
-  phones: "موبایل",
-  handbags: "کیف دستی",
-  wallets: "کیف پول",
-  keys: "کلید",
-  id_cards: "کارت شناسایی / دانشجویی",
-  laptops: "لپ‌تاپ",
+const CATEGORY_FALLBACK = {
   other: "سایر",
 };
 
@@ -100,26 +92,85 @@ export default function RecentLostItemsPage() {
   const [filterType, setFilterType] = useState("");
   const [filterFromPreset, setFilterFromPreset] = useState("any");
   const [filterToPreset, setFilterToPreset] = useState("any");
+  const [filterApplied, setFilterApplied] = useState(false);
+  const [filterNameDraft, setFilterNameDraft] = useState("");
+  const [filterTypeDraft, setFilterTypeDraft] = useState("");
+  const [filterFromPresetDraft, setFilterFromPresetDraft] = useState("any");
+  const [filterToPresetDraft, setFilterToPresetDraft] = useState("any");
+  const [selectedCategoryIdsDraft, setSelectedCategoryIdsDraft] = useState([]);
+  const [filterApplying, setFilterApplying] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [categoryMap, setCategoryMap] = useState({});
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
   const hydratedIdsRef = useRef(new Set());
   const { user } = useAuth();
   const currentUserEmail = user?.email || "";
 
   useEffect(() => {
-    setLoadingItems(true);
-    fetchProductsPage({ page, size })
-      .then(({ items: nextItems, meta }) => {
-        setItems(nextItems);
-        setHasNext(Boolean(meta?.hasNext));
-        setTotalPages(meta?.totalPages || 0);
-      })
-      .catch((err) => {
+    let cancelled = false;
+    async function loadPage() {
+      setLoadingItems(true);
+      try {
+        if (filterApplied) {
+          const fromDate = presetToDate(filterFromPreset, true);
+          const toDate = presetToDate(filterToPreset, false);
+          const response = await fetchItemsByLocationPage({
+            name: filterName.trim() || undefined,
+            type: filterType || undefined,
+            categoryIds: selectedCategoryIds.length ? selectedCategoryIds : undefined,
+            from: fromDate ? fromDate.toISOString() : undefined,
+            to: toDate ? toDate.toISOString() : undefined,
+            page,
+            size,
+          });
+          if (cancelled) return;
+          setItems(response.items || []);
+          setHasNext(Boolean(response.meta?.hasNext));
+          setTotalPages(response.meta?.totalPages || 0);
+        } else {
+          const { items: nextItems, meta } = await fetchProductsPage({ page, size, useCache: false });
+          if (cancelled) return;
+          setItems(nextItems);
+          setHasNext(Boolean(meta?.hasNext));
+          setTotalPages(meta?.totalPages || 0);
+        }
+      } catch (err) {
+        if (cancelled) return;
         console.error(err);
         setItems([]);
         setHasNext(false);
         setTotalPages(0);
+      } finally {
+        if (!cancelled) setLoadingItems(false);
+      }
+    }
+    loadPage();
+    return () => {
+      cancelled = true;
+    };
+  }, [page, size, filterApplied, filterName, filterType, filterFromPreset, filterToPreset, selectedCategoryIds]);
+
+  useEffect(() => {
+    if (!filterApplying) return;
+    const id = setTimeout(() => setFilterApplying(false), 0);
+    return () => clearTimeout(id);
+  }, [filterApplying, filterName, filterType, filterFromPreset, filterToPreset, selectedCategoryIds, items]);
+
+  useEffect(() => {
+    fetchCategories()
+      .then((list) => {
+        setCategories(list);
+        const map = list.reduce((acc, cat) => {
+          acc[cat.id] = { label: cat.name, color: cat.color, key: cat.key };
+          return acc;
+        }, {});
+        setCategoryMap(map);
       })
-      .finally(() => setLoadingItems(false));
-  }, [page, size]);
+      .catch(() => {
+        setCategories([]);
+        setCategoryMap({});
+      });
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -165,22 +216,10 @@ export default function RecentLostItemsPage() {
   }
 
   const recentItems = useMemo(() => {
-    const nameQuery = filterName.trim().toLowerCase();
-    const typeQuery = filterType ? filterType.toUpperCase() : "";
-    const fromDate = presetToDate(filterFromPreset, true);
-    const toDate = presetToDate(filterToPreset, false);
     return items
-      .filter((item) => {
-        if (typeQuery && item.type !== typeQuery) return false;
-        if (nameQuery && !(item.name || "").toLowerCase().includes(nameQuery)) return false;
-        const createdAt = new Date(item.createdAt);
-        if (fromDate && createdAt < fromDate) return false;
-        if (toDate && createdAt > toDate) return false;
-        return true;
-      })
       .slice()
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  }, [items, filterName, filterType, filterFromPreset, filterToPreset]);
+  }, [items]);
 
   function openItem(item) {
     setSelected(item);
@@ -232,15 +271,15 @@ export default function RecentLostItemsPage() {
                       <input
                         type="text"
                         placeholder="مثلاً کیف"
-                        value={filterName}
-                        onChange={(e) => setFilterName(e.target.value)}
+                        value={filterNameDraft}
+                        onChange={(e) => setFilterNameDraft(e.target.value)}
                       />
                     </label>
                     <label className="item-list__filter-field">
                       <span>نوع</span>
                       <select
-                        value={filterType}
-                        onChange={(e) => setFilterType(e.target.value)}
+                        value={filterTypeDraft}
+                        onChange={(e) => setFilterTypeDraft(e.target.value)}
                       >
                         <option value="">همه</option>
                         <option value="LOST">گمشده</option>
@@ -248,10 +287,46 @@ export default function RecentLostItemsPage() {
                       </select>
                     </label>
                     <label className="item-list__filter-field">
+                      <span>دسته‌بندی</span>
+                      <select
+                        value=""
+                        onChange={(e) => {
+                          const next = Number(e.target.value);
+                          if (!Number.isFinite(next)) return;
+                          setSelectedCategoryIdsDraft((prev) =>
+                            prev.includes(next) ? prev : [...prev, next]
+                          );
+                        }}
+                      >
+                        <option value="">انتخاب دسته‌بندی...</option>
+                        {categories.map((cat) => (
+                          <option key={cat.id} value={cat.id}>
+                            {cat.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    {selectedCategoryIdsDraft.length ? (
+                      <div className="item-list__selected-tags">
+                        {selectedCategoryIdsDraft.map((id) => (
+                          <button
+                            key={id}
+                            type="button"
+                            className="item-list__tag"
+                            onClick={() =>
+                              setSelectedCategoryIdsDraft((prev) => prev.filter((x) => x !== id))
+                            }
+                          >
+                            {categoryMap[id]?.label || id} ✕
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                    <label className="item-list__filter-field">
                       <span>از تاریخ</span>
                       <select
-                        value={filterFromPreset}
-                        onChange={(e) => setFilterFromPreset(e.target.value)}
+                        value={filterFromPresetDraft}
+                        onChange={(e) => setFilterFromPresetDraft(e.target.value)}
                       >
                         <option value="any">بدون محدودیت</option>
                         <option value="today">امروز</option>
@@ -263,8 +338,8 @@ export default function RecentLostItemsPage() {
                     <label className="item-list__filter-field">
                       <span>تا تاریخ</span>
                       <select
-                        value={filterToPreset}
-                        onChange={(e) => setFilterToPreset(e.target.value)}
+                        value={filterToPresetDraft}
+                        onChange={(e) => setFilterToPresetDraft(e.target.value)}
                       >
                         <option value="any">بدون محدودیت</option>
                         <option value="today">امروز</option>
@@ -273,6 +348,44 @@ export default function RecentLostItemsPage() {
                         <option value="90d">۹۰ روز اخیر</option>
                       </select>
                     </label>
+                    <div className="item-list__filter-actions">
+                      <button
+                        type="button"
+                        className="btn btn-outline-secondary"
+                        onClick={() => {
+                          setFilterApplying(true);
+                          setFilterName(filterNameDraft);
+                          setFilterType(filterTypeDraft);
+                          setFilterFromPreset(filterFromPresetDraft);
+                          setFilterToPreset(filterToPresetDraft);
+                          setSelectedCategoryIds(selectedCategoryIdsDraft);
+                          setFilterApplied(true);
+                          setPage(0);
+                        }}
+                      >
+                        اعمال فیلترها
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-outline-secondary"
+                        onClick={() => {
+                          setFilterNameDraft("");
+                          setFilterTypeDraft("");
+                          setFilterFromPresetDraft("any");
+                          setFilterToPresetDraft("any");
+                          setSelectedCategoryIdsDraft([]);
+                          setFilterName("");
+                          setFilterType("");
+                          setFilterFromPreset("any");
+                          setFilterToPreset("any");
+                          setSelectedCategoryIds([]);
+                          setFilterApplied(false);
+                          setPage(0);
+                        }}
+                      >
+                        پاک کردن
+                      </button>
+                    </div>
                   </div>
                 </details>
               </div>
@@ -288,6 +401,8 @@ export default function RecentLostItemsPage() {
                     </div>
                   ))}
                 </div>
+              ) : filterApplying ? (
+                <div className="p-4 text-center text-muted">در حال اعمال فیلتر...</div>
               ) : recentItems.length === 0 ? (
                 <div className="p-4 text-center text-muted">موردی وجود ندارد.</div>
               ) : (
@@ -325,7 +440,10 @@ export default function RecentLostItemsPage() {
                                 {item.name || "—"}
                               </div>
                               <div className="item-list__sub">
-                                {CATEGORY_LABELS[item.category] || item.categoryLabel || "—"}
+                                {categoryMap[item.categoryId]?.label ||
+                                  item.categoryLabel ||
+                                  CATEGORY_FALLBACK[item.category] ||
+                                  "—"}
                                 {" • "}
                                 {fmt(item.createdAt)}
                               </div>
@@ -416,8 +534,9 @@ export default function RecentLostItemsPage() {
                   <PreviewLine
                     label="دسته‌بندی"
                     value={
-                      CATEGORY_LABELS[selected.category] ||
+                      categoryMap[selected.categoryId]?.label ||
                       selected.categoryLabel ||
+                      CATEGORY_FALLBACK[selected.category] ||
                       "—"
                     }
                   />

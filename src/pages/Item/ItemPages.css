@@ -223,6 +223,28 @@
   gap: 8px;
 }
 
+.item-list__selected-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.item-list__filter-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.item-list__tag {
+  border: 1px solid rgba(91, 91, 255, 0.25);
+  background: rgba(91, 91, 255, 0.08);
+  color: #1f2340;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
 .item-list__filter-field {
   display: grid;
   gap: 6px;

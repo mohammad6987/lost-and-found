@@ -55,6 +55,16 @@ export function mapProductToItem(product) {
 
   const categoryName =
     product?.categoryName || product?.category_name || product?.categoryLabel;
+  const categoryIdRaw =
+    product?.category?.id ||
+    product?.category_id ||
+    (typeof product?.category === "number" || typeof product?.category === "string"
+      ? product.category
+      : null);
+  const categoryId =
+    categoryIdRaw === null || categoryIdRaw === undefined
+      ? null
+      : Number(categoryIdRaw);
   const itemName = product?.itemName || product?.name || product?.title;
   const description = product?.description || product?.notes || "";
   const reporterEmail =
@@ -86,6 +96,7 @@ export function mapProductToItem(product) {
   return {
     id: String(product?.id ?? ""),
     name: itemName || "—",
+    categoryId,
     category: normalizeCategoryName(categoryName),
     categoryLabel: categoryName || "سایر",
     description,
@@ -174,6 +185,7 @@ async function fetchItemsByLocationRaw({
   radiusKm,
   name,
   type,
+  categoryIds,
   from,
   to,
   page,
@@ -183,6 +195,12 @@ async function fetchItemsByLocationRaw({
   const search = new URLSearchParams();
   if (name) search.set("name", name);
   if (type) search.set("type", String(type).toUpperCase());
+  if (categoryIds) {
+    const value = Array.isArray(categoryIds)
+      ? categoryIds.join(",")
+      : String(categoryIds);
+    search.set("categoryIds", value);
+  }
   if (from) search.set("from", from);
   if (to) search.set("to", to);
   if (page !== undefined) search.set("page", String(page));

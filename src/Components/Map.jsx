@@ -13,30 +13,18 @@ import {
 import MarkerClusterGroup from "react-leaflet-markercluster";
 import L from "leaflet";
 import { fetchItemsByLocationPage, fetchProductsPage } from "../services/products";
+import { fetchCategories } from "../services/categories";
 import CachedTileLayer from "./CachedTileLayer";
 
 import "leaflet/dist/leaflet.css";
 import "../assets/Map.css";
 
-const CATEGORY_META = {
-  electronics: { label: "الکترونیک", color: "#2a6bd9" },
-  documents: { label: "مدارک", color: "#16a34a" },
-  clothing: { label: "پوشاک", color: "#db2777" },
-  other: { label: "سایر", color: "#f59e0b" },
-  phones: { label: "موبایل", color: "#2a6bd9" },
-  handbags: { label: "کیف دستی", color: "#7c3aed" },
-  wallets: { label: "کیف پول", color: "#f97316" },
-  keys: { label: "کلید", color: "#0ea5e9" },
-  id_cards: { label: "کارت شناسایی", color: "#10b981" },
-  laptops: { label: "لپ‌تاپ", color: "#2563eb" },
-};
-
-function getCategoryMeta(category) {
-  return CATEGORY_META[category] || CATEGORY_META.other;
+function getCategoryMeta(category, categoriesMap) {
+  return categoriesMap?.[category] || { label: category || "سایر", color: "#94a3b8" };
 }
 
-function getCategoryLabel(item) {
-  return item?.categoryLabel || getCategoryMeta(item?.category).label;
+function getCategoryLabel(item, categoriesMap) {
+  return item?.categoryLabel || getCategoryMeta(item?.category, categoriesMap).label;
 }
 
 /* ================== config ================== */
@@ -44,8 +32,8 @@ const TILE_URL = import.meta.env.VITE_MAP_TILE_URL;
 const TILE_ATTR = import.meta.env.VITE_MAP_ATTRIBUTION;
 
 /* ================== helpers ================== */
-function markerIcon(category, count = 1) {
-  const meta = getCategoryMeta(category);
+function markerIcon(category, count = 1, categoriesMap) {
+  const meta = getCategoryMeta(category, categoriesMap);
   const label = count > 1 ? `<span class="marker-count">${count}</span>` : "";
   return L.divIcon({
     className: "",
@@ -105,6 +93,10 @@ function Sidebar({
   selectedCategories,
   toggleCategory,
   loading,
+  categories,
+  categoriesMap,
+  selectedCategoryIds,
+  toggleCategoryId,
   filterCenter,
   filterDiameterM,
   filterPickMode,
@@ -141,31 +133,13 @@ function Sidebar({
     );
   }
 
-  const categories = Array.from(
+  const categoriesInItems = Array.from(
     new Set(items.map((item) => item.category).filter(Boolean))
   );
 
   return (
     <aside className="sidebar" dir="rtl">
       <h3>اشیای گم‌شده</h3>
-
-      <div className="filter-section">
-        <strong>فیلتر دسته‌بندی</strong>
-        {categories.map((cat) => (
-          <label key={cat} className="filter-label">
-            <input
-              type="checkbox"
-              checked={selectedCategories.includes(cat)}
-              onChange={() => toggleCategory(cat)}
-            />
-            <span
-              className="filter-dot"
-              style={{ background: getCategoryMeta(cat).color }}
-            />
-            {getCategoryMeta(cat).label}
-          </label>
-        ))}
-      </div>
 
       <div className="filter-section">
         <strong>فیلترها</strong>
@@ -182,6 +156,27 @@ function Sidebar({
                 onChange={(e) => onChangeName(e.target.value)}
               />
             </label>
+
+            <div className="filter-divider" />
+
+            <div className="filter-coords">فیلتر دسته‌بندی</div>
+            {categories.length === 0 ? (
+              <div className="filter-coords">دسته‌بندی‌ها موجود نیست.</div>
+            ) : (
+              categories.map((cat) => (
+                <label key={cat.id} className="filter-label">
+                  <input
+                    type="checkbox"
+                    checked={selectedCategoryIds.includes(cat.id)}
+                    onChange={() => toggleCategoryId(cat.id)}
+                  />
+                  <span className="filter-dot" style={{ background: cat.color }} />
+                  {cat.name}
+                </label>
+              ))
+            )}
+
+            <div className="filter-divider" />
 
             <label className="filter-label filter-field">
               <span>نوع</span>
@@ -292,9 +287,9 @@ function Sidebar({
           >
             <div
               className="badge"
-              style={{ background: getCategoryMeta(item.category).color }}
+              style={{ background: getCategoryMeta(item.category, categoriesMap).color }}
             >
-              {getCategoryLabel(item)}
+              {getCategoryLabel(item, categoriesMap)}
             </div>
             <div className="item-name">{item.name}</div>
             <div className="item-timestamp">
@@ -320,6 +315,9 @@ export default function LostAndFoundMap() {
   const [items, setItems] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [selectedCategories, setSelectedCategories] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [categoriesMap, setCategoriesMap] = useState({});
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
   const [userLocation, setUserLocation] = useState(null);
   const [userOutOfBounds, setUserOutOfBounds] = useState(false);
   const [loadingItems, setLoadingItems] = useState(true);
@@ -345,6 +343,22 @@ export default function LostAndFoundMap() {
 
   const markerRefs = useRef({});
 
+  useEffect(() => {
+    fetchCategories()
+      .then((list) => {
+        setCategories(list);
+        const map = list.reduce((acc, cat) => {
+          acc[cat.key] = { label: cat.name, color: cat.color, id: cat.id };
+          return acc;
+        }, {});
+        setCategoriesMap(map);
+      })
+      .catch(() => {
+        setCategories([]);
+        setCategoriesMap({});
+      });
+  }, []);
+
   async function loadMapPage({ nextPage = page, useFilter = filterApplied } = {}) {
     setLoadingItems(true);
     try {
@@ -362,6 +376,7 @@ export default function LostAndFoundMap() {
           radiusKm: needsLocation ? radiusKm : undefined,
           name: filterName.trim() || undefined,
           type: filterType || undefined,
+          categoryIds: selectedCategoryIds.length ? selectedCategoryIds : undefined,
           from: fromIso || undefined,
           to: toIso || undefined,
           page: nextPage,
@@ -381,9 +396,10 @@ export default function LostAndFoundMap() {
       setItems(mapItems);
       setHasNext(Boolean(meta?.hasNext));
       setTotalPages(meta?.totalPages || 0);
-      setSelectedCategories(
-        Array.from(new Set(mapItems.map((item) => item.category).filter(Boolean)))
+      const mapCategoryKeys = Array.from(
+        new Set(mapItems.map((item) => item.category).filter(Boolean))
       );
+      setSelectedCategories(mapCategoryKeys);
     } catch (err) {
       console.error(err);
     } finally {
@@ -433,6 +449,14 @@ export default function LostAndFoundMap() {
       prev.includes(cat)
         ? prev.filter((c) => c !== cat)
         : [...prev, cat]
+    );
+  };
+
+  const toggleCategoryId = (catId) => {
+    setSelectedCategoryIds((prev) =>
+      prev.includes(catId)
+        ? prev.filter((c) => c !== catId)
+        : [...prev, catId]
     );
   };
 
@@ -509,6 +533,10 @@ export default function LostAndFoundMap() {
         selectedCategories={selectedCategories}
         toggleCategory={toggleCategory}
         loading={loadingItems}
+        categories={categories}
+        categoriesMap={categoriesMap}
+        selectedCategoryIds={selectedCategoryIds}
+        toggleCategoryId={toggleCategoryId}
         filterCenter={filterCenter}
         filterDiameterM={filterDiameterM}
         filterPickMode={filterPickMode}
@@ -589,14 +617,14 @@ export default function LostAndFoundMap() {
                   <Marker
                     key={key}
                     position={[lat, lng]}
-                    icon={markerIcon(markerItem.category, group.length)}
+                    icon={markerIcon(markerItem.category, group.length, categoriesMap)}
                   >
                     <Popup>
                       {group.length === 1 ? (
                         <>
                           <strong>{markerItem.name}</strong>
                           <br />
-                          {getCategoryLabel(markerItem)}
+                          {getCategoryLabel(markerItem, categoriesMap)}
                           <br />
                           {new Date(markerItem.timestamp).toLocaleString("fa-IR")}
                           <div className="map-popup-actions">
@@ -628,7 +656,7 @@ export default function LostAndFoundMap() {
                               >
                                 <div className="map-popup-list__name">{item.name}</div>
                                 <div className="map-popup-list__meta">
-                                  {getCategoryLabel(item)} •{" "}
+                                  {getCategoryLabel(item, categoriesMap)} •{" "}
                                   {new Date(item.timestamp).toLocaleString("fa-IR")}
                                 </div>
                               </button>
