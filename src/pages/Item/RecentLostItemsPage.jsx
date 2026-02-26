@@ -85,7 +85,7 @@ export default function RecentLostItemsPage() {
   const [items, setItems] = useState([]);
   const [loadingItems, setLoadingItems] = useState(true);
   const [page, setPage] = useState(0);
-  const [size] = useState(10);
+  const [size] = useState(12);
   const [hasNext, setHasNext] = useState(false);
   const [totalPages, setTotalPages] = useState(0);
   const [filterName, setFilterName] = useState("");
