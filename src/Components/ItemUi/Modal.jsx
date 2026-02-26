@@ -2,7 +2,7 @@ import React from "react";
 import { UI_TEXT } from "./textFormat";
 import { THEME } from "../../pages/Item/itemTheme";
 
-export default function Modal({ title, onClose, children }) {
+export default function Modal({ title, onClose, children, cardClassName = "", bodyClassName = "" }) {
   return (
     <div
       dir="rtl"
@@ -22,7 +22,7 @@ export default function Modal({ title, onClose, children }) {
       onClick={onClose}
     >
       <div
-        className="card shadow"
+        className={`card shadow ${cardClassName}`.trim()}
         style={{
           width: "100%",
           maxWidth: 980,
@@ -35,7 +35,7 @@ export default function Modal({ title, onClose, children }) {
         <div className="card-header bg-white d-flex align-items-center justify-content-between">
           <strong>{title}</strong>
         </div>
-        <div className="card-body">{children}</div>
+        <div className={`card-body ${bodyClassName}`.trim()}>{children}</div>
       </div>
     </div>
   );

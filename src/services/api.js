@@ -396,6 +396,62 @@ export async function getUserProfileById(userId) {
 }
 
 /**
+ * Update current user profile (partial update allowed)
+ * Backend endpoint: PUT /api/users/profile/
+ * @param {Object|FormData} payload
+ */
+export async function updateUserProfile(payload) {
+  const accessToken = getAccessToken();
+  const isFormData = payload instanceof FormData;
+  const headers = {
+    accept: "*/*",
+  };
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+  if (!isFormData) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  const endpoint = `/api/users/profile/`;
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    method: "PUT",
+    headers,
+    body: isFormData ? payload : JSON.stringify(payload),
+  });
+
+  let data;
+  try {
+    data = await response.json();
+  } catch {
+    data = {};
+  }
+
+  if (!response.ok) {
+    const error = new Error(
+      data.error || data.detail || data.message || getErrorMessage(response.status)
+    );
+    error.status = response.status;
+    error.data = data;
+    throw error;
+  }
+
+  return data;
+}
+
+/**
+ * Update current user's email
+ * Backend endpoint: PUT /api/users/profile/email/
+ * @param {{ new_email: string, current_password: string }} payload
+ */
+export async function updateUserEmail(payload) {
+  return fetchAPI("/api/users/profile/email/", {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+/**
  * Get all products
  * Backend endpoint: GET /api/product
  * Fallback: GET /api/product

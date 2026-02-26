@@ -1,7 +1,13 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { isAuthenticated, getUserData, clearAuth } from "../../services/auth";
-import { getUserProfile, getCurrentUser, getItemCountsMe } from "../../services/api";
+import { isAuthenticated, getUserData, clearAuth, setUserData } from "../../services/auth";
+import {
+  getUserProfile,
+  getCurrentUser,
+  getItemCountsMe,
+  updateUserProfile,
+  updateUserEmail,
+} from "../../services/api";
 import "./Profile.css";
 
 // Mock user data - TODO: Replace with actual API call
@@ -51,6 +57,26 @@ export default function Profile() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
   const [userItems, setUserItems] = useState([]);
+  const [editForm, setEditForm] = useState({
+    userName: "",
+    phoneNumber: "",
+    department: "",
+    preferredContact: "email",
+    bio: "",
+    isPublic: true,
+    socialLinks: "",
+    profilePicFile: null,
+  });
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileError, setProfileError] = useState("");
+  const [profileSuccess, setProfileSuccess] = useState("");
+  const [emailForm, setEmailForm] = useState({
+    newEmail: "",
+    currentPassword: "",
+  });
+  const [savingEmail, setSavingEmail] = useState(false);
+  const [emailError, setEmailError] = useState("");
+  const [emailSuccess, setEmailSuccess] = useState("");
 
   // Check authentication
   useEffect(() => {
@@ -88,6 +114,8 @@ export default function Profile() {
             preferredContact: profileData?.preferred_contact_method || "email",
             socialMedia: profileData?.social_media_links || {},
             profilePic: profileData?.profile_pic || null,
+            bio: profileData?.bio || "",
+            isPublic: profileData?.is_public ?? true,
             itemsReported: 0,
             itemsFound: 0,
             joinedDate: "نامشخص",
@@ -121,6 +149,8 @@ export default function Profile() {
           preferredContact: "email",
           socialMedia: {},
           profilePic: null,
+          bio: "",
+          isPublic: true,
           itemsReported: 0,
           itemsFound: 0,
           joinedDate: "نامشخص",
@@ -164,6 +194,8 @@ export default function Profile() {
         preferredContact: profileData?.preferred_contact_method || "email",
         socialMedia: profileData?.social_media_links || {},
         profilePic: profileData?.profile_pic || null,
+        bio: profileData?.bio || "",
+        isPublic: profileData?.is_public ?? true,
         itemsReported: counts?.lost_reported ?? 0,
         itemsFound: counts?.found_reported ?? 0,
         joinedDate: "نامشخص",
@@ -177,6 +209,128 @@ export default function Profile() {
       alert("خطا در به‌روزرسانی پروفایل. لطفاً دوباره تلاش کنید.");
     } finally {
       setIsRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!userProfile) return;
+    setEditForm({
+      userName: userProfile.name || "",
+      phoneNumber: userProfile.phoneNumber === "-" ? "" : userProfile.phoneNumber || "",
+      department: userProfile.department === "نامشخص" ? "" : userProfile.department || "",
+      preferredContact: userProfile.preferredContact || "email",
+      bio: userProfile.bio || "",
+      isPublic: userProfile.isPublic ?? true,
+      socialLinks: JSON.stringify(userProfile.socialMedia || {}, null, 2),
+      profilePicFile: null,
+    });
+  }, [userProfile]);
+
+  const handleSaveProfile = async () => {
+    setProfileError("");
+    setProfileSuccess("");
+    setSavingProfile(true);
+    try {
+      const basePhone =
+        userProfile?.phoneNumber === "-" ? "" : userProfile?.phoneNumber || "";
+      const baseDepartment =
+        userProfile?.department === "نامشخص" ? "" : userProfile?.department || "";
+      let socialMediaLinks = undefined;
+      if (editForm.socialLinks && editForm.socialLinks.trim()) {
+        try {
+          socialMediaLinks = JSON.parse(editForm.socialLinks);
+        } catch {
+          throw new Error("فرمت شبکه‌های اجتماعی باید JSON معتبر باشد.");
+        }
+      } else if (editForm.socialLinks === "") {
+        socialMediaLinks = {};
+      }
+
+      const payload = {};
+      const nextUserName = editForm.userName.trim();
+      const nextPhone = editForm.phoneNumber.trim();
+      const nextDepartment = editForm.department.trim();
+      const nextBio = editForm.bio.trim();
+      if (nextUserName !== (userProfile?.name || "")) payload.user_name = nextUserName;
+      if (nextPhone !== basePhone) payload.phone_number = nextPhone;
+      if (nextDepartment !== baseDepartment) payload.department = nextDepartment;
+      if (editForm.preferredContact && editForm.preferredContact !== userProfile?.preferredContact) {
+        payload.preferred_contact_method = editForm.preferredContact;
+      }
+      if (nextBio !== (userProfile?.bio || "")) payload.bio = nextBio;
+      if ((userProfile?.isPublic ?? true) !== editForm.isPublic) {
+        payload.is_public = editForm.isPublic;
+      }
+      const baseSocial = userProfile?.socialMedia || {};
+      if (socialMediaLinks !== undefined) {
+        if (JSON.stringify(socialMediaLinks) !== JSON.stringify(baseSocial)) {
+          payload.social_media_links = socialMediaLinks;
+        }
+      }
+
+      if (!editForm.profilePicFile && Object.keys(payload).length === 0) {
+        setProfileSuccess("تغییری برای ذخیره وجود ندارد.");
+        return;
+      }
+
+      let requestBody = payload;
+      if (editForm.profilePicFile) {
+        const formData = new FormData();
+        Object.entries(payload).forEach(([key, value]) => {
+          if (value === undefined) return;
+          if (value === null) {
+            formData.append(key, "");
+          } else if (typeof value === "object") {
+            formData.append(key, JSON.stringify(value));
+          } else {
+            formData.append(key, String(value));
+          }
+        });
+        formData.append("profile_pic", editForm.profilePicFile);
+        requestBody = formData;
+      }
+
+      await updateUserProfile(requestBody);
+      await handleRefreshProfile();
+      setProfileSuccess("پروفایل با موفقیت به‌روزرسانی شد.");
+    } catch (err) {
+      setProfileError(err?.message || "خطا در به‌روزرسانی پروفایل.");
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleUpdateEmail = async () => {
+    setEmailError("");
+    setEmailSuccess("");
+    if (!emailForm.newEmail.trim() || !emailForm.currentPassword) {
+      setEmailError("ایمیل جدید و رمز عبور فعلی را وارد کنید.");
+      return;
+    }
+    setSavingEmail(true);
+    try {
+      await updateUserEmail({
+        new_email: emailForm.newEmail.trim(),
+        current_password: emailForm.currentPassword,
+      });
+      const existing = getUserData();
+      setUserData({
+        user_id: existing?.user_id,
+        email: emailForm.newEmail.trim(),
+        name: existing?.name || userProfile?.name,
+      });
+      setUserProfile((prev) => {
+        if (!prev) return prev;
+        const next = { ...prev, email: emailForm.newEmail.trim() };
+        localStorage.setItem("userProfileCache", JSON.stringify(next));
+        return next;
+      });
+      setEmailForm({ newEmail: "", currentPassword: "" });
+      setEmailSuccess("ایمیل با موفقیت به‌روزرسانی شد.");
+    } catch (err) {
+      setEmailError(err?.message || "خطا در به‌روزرسانی ایمیل.");
+    } finally {
+      setSavingEmail(false);
     }
   };
 
@@ -216,8 +370,8 @@ export default function Profile() {
         {/* Profile Card */}
         <section className="profile-card">
           <div className="profile-avatar">
-            {userProfile?.avatar ? (
-              <img src={userProfile.avatar} alt={userProfile.name} />
+            {userProfile?.profilePic ? (
+              <img src={userProfile.profilePic} alt={userProfile.name} />
             ) : (
               <span className="avatar-placeholder">👤</span>
             )}
@@ -307,6 +461,183 @@ export default function Profile() {
                   )}
                 </div>
               </div>
+
+              <details className="profile-dropdown">
+                <summary className="profile-dropdown__summary">
+                  ویرایش پروفایل
+                </summary>
+                <div className="profile-dropdown__content">
+                  {profileError ? (
+                    <div className="profile-form__error">{profileError}</div>
+                  ) : null}
+                  {profileSuccess ? (
+                    <div className="profile-form__success">{profileSuccess}</div>
+                  ) : null}
+                  <div className="profile-form">
+                    <label className="profile-form__field">
+                      <span>نام کاربری</span>
+                      <input
+                        type="text"
+                        value={editForm.userName}
+                        onChange={(e) =>
+                          setEditForm((prev) => ({ ...prev, userName: e.target.value }))
+                        }
+                      />
+                    </label>
+                    <label className="profile-form__field">
+                      <span>شماره تلفن</span>
+                      <input
+                        type="text"
+                        value={editForm.phoneNumber}
+                        onChange={(e) =>
+                          setEditForm((prev) => ({ ...prev, phoneNumber: e.target.value }))
+                        }
+                      />
+                    </label>
+                    <label className="profile-form__field">
+                      <span>دانشکده</span>
+                      <input
+                        type="text"
+                        value={editForm.department}
+                        onChange={(e) =>
+                          setEditForm((prev) => ({ ...prev, department: e.target.value }))
+                        }
+                      />
+                    </label>
+                    <label className="profile-form__field">
+                      <span>روش تماس ترجیحی</span>
+                      <select
+                        value={editForm.preferredContact}
+                        onChange={(e) =>
+                          setEditForm((prev) => ({ ...prev, preferredContact: e.target.value }))
+                        }
+                      >
+                        <option value="email">ایمیل</option>
+                        <option value="phone">تلفن</option>
+                        <option value="social">شبکه اجتماعی</option>
+                      </select>
+                    </label>
+                    <label className="profile-form__field profile-form__field--full">
+                      <span>بیوگرافی</span>
+                      <textarea
+                        value={editForm.bio}
+                        onChange={(e) =>
+                          setEditForm((prev) => ({ ...prev, bio: e.target.value }))
+                        }
+                        rows={3}
+                      />
+                    </label>
+                    <label className="profile-form__field profile-form__field--full">
+                      <span>لینک‌های شبکه‌های اجتماعی (JSON)</span>
+                      <textarea
+                        value={editForm.socialLinks}
+                        onChange={(e) =>
+                          setEditForm((prev) => ({ ...prev, socialLinks: e.target.value }))
+                        }
+                        rows={3}
+                        placeholder='{"telegram":"@id","instagram":"@id"}'
+                      />
+                    </label>
+                    <label className="profile-form__field profile-form__field--full">
+                      <span>عکس پروفایل</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) =>
+                          setEditForm((prev) => ({
+                            ...prev,
+                            profilePicFile: e.target.files?.[0] || null,
+                          }))
+                        }
+                      />
+                    </label>
+                    <label className="profile-form__field profile-form__checkbox">
+                      <input
+                        type="checkbox"
+                        checked={editForm.isPublic}
+                        onChange={(e) =>
+                          setEditForm((prev) => ({ ...prev, isPublic: e.target.checked }))
+                        }
+                      />
+                      <span>پروفایل عمومی باشد</span>
+                    </label>
+                  </div>
+                  <div className="profile-form__actions">
+                    <button
+                      type="button"
+                      className="btn btn-outline-secondary"
+                      onClick={() => {
+                        setEditForm((prev) => ({
+                          ...prev,
+                          profilePicFile: null,
+                        }));
+                        setProfileError("");
+                        setProfileSuccess("");
+                      }}
+                      disabled={savingProfile}
+                    >
+                      بازنشانی انتخاب عکس
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-primary profile-dropdown__primary"
+                      onClick={handleSaveProfile}
+                      disabled={savingProfile}
+                    >
+                      {savingProfile ? "در حال ذخیره..." : "ذخیره تغییرات"}
+                    </button>
+                  </div>
+                </div>
+              </details>
+
+              <details className="profile-dropdown">
+                <summary className="profile-dropdown__summary">
+                  تغییر ایمیل
+                </summary>
+                <div className="profile-dropdown__content">
+                  {emailError ? (
+                    <div className="profile-form__error">{emailError}</div>
+                  ) : null}
+                  {emailSuccess ? (
+                    <div className="profile-form__success">{emailSuccess}</div>
+                  ) : null}
+                  <div className="profile-form">
+                    <label className="profile-form__field">
+                      <span>ایمیل جدید</span>
+                      <input
+                        type="email"
+                        value={emailForm.newEmail}
+                        onChange={(e) =>
+                          setEmailForm((prev) => ({ ...prev, newEmail: e.target.value }))
+                        }
+                      />
+                    </label>
+                    <label className="profile-form__field">
+                      <span>رمز عبور فعلی</span>
+                      <input
+                        type="password"
+                        value={emailForm.currentPassword}
+                        onChange={(e) =>
+                          setEmailForm((prev) => ({
+                            ...prev,
+                            currentPassword: e.target.value,
+                          }))
+                        }
+                      />
+                    </label>
+                  </div>
+                  <div className="profile-form__actions">
+                    <button
+                      type="button"
+                      className="btn btn-primary profile-dropdown__primary"
+                      onClick={handleUpdateEmail}
+                      disabled={savingEmail}
+                    >
+                      {savingEmail ? "در حال ثبت..." : "به‌روزرسانی ایمیل"}
+                    </button>
+                  </div>
+                </div>
+              </details>
 
               <div className="info-card">
                 <h3>عملیات حساب</h3>
