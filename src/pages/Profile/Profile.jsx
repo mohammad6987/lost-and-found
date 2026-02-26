@@ -8,6 +8,7 @@ import {
   updateUserProfile,
   updateUserEmail,
 } from "../../services/api";
+import { notifySuccess } from "../../services/notify";
 import "./Profile.css";
 
 // Mock user data - TODO: Replace with actual API call
@@ -171,6 +172,7 @@ export default function Profile() {
     // Clear cached profile data on logout
     localStorage.removeItem("userProfileCache");
     clearAuth();
+    notifySuccess("با موفقیت خارج شدید.");
     navigate("/login");
   };
 
@@ -270,6 +272,7 @@ export default function Profile() {
 
       if (!editForm.profilePicFile && Object.keys(payload).length === 0) {
         setProfileSuccess("تغییری برای ذخیره وجود ندارد.");
+        notifySuccess("تغییری برای ذخیره وجود ندارد.");
         return;
       }
 
@@ -293,6 +296,7 @@ export default function Profile() {
       await updateUserProfile(requestBody);
       await handleRefreshProfile();
       setProfileSuccess("پروفایل با موفقیت به‌روزرسانی شد.");
+      notifySuccess("پروفایل با موفقیت به‌روزرسانی شد.");
     } catch (err) {
       setProfileError(err?.message || "خطا در به‌روزرسانی پروفایل.");
     } finally {
@@ -327,6 +331,7 @@ export default function Profile() {
       });
       setEmailForm({ newEmail: "", currentPassword: "" });
       setEmailSuccess("ایمیل با موفقیت به‌روزرسانی شد.");
+      notifySuccess("ایمیل با موفقیت به‌روزرسانی شد.");
     } catch (err) {
       setEmailError(err?.message || "خطا در به‌روزرسانی ایمیل.");
     } finally {

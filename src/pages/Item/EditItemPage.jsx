@@ -9,6 +9,7 @@ import { useAuth } from "../../context/AuthContext";
 import { deleteItemById, patchItemById } from "../../services/api";
 import { fetchCategories } from "../../services/categories";
 import { MapContainer, TileLayer, CircleMarker, useMap, useMapEvents } from "react-leaflet";
+import { notifySuccess } from "../../services/notify";
 
 const DEFAULT_CENTER = [35.702831, 51.3516];
 const MAP_DELTA = 0.0055;
@@ -325,6 +326,7 @@ export default function EditItemPage() {
                     }
                     try {
                       await patchItemById(item.id, payload);
+                      notifySuccess("تغییرات با موفقیت ذخیره شد.");
                       nav("/items");
                     } catch (err) {
                       setSaveError(err?.message || "خطا در ذخیره‌سازی تغییرات.");
@@ -347,6 +349,7 @@ export default function EditItemPage() {
                     setDelivering(true);
                     try {
                       await patchItemById(item.id, { status: "DELIVERED" });
+                      notifySuccess("وضعیت با موفقیت ثبت شد.");
                       nav("/items");
                     } catch (err) {
                       setSaveError(err?.message || "خطا در ثبت وضعیت تحویل.");
@@ -369,6 +372,7 @@ export default function EditItemPage() {
                     setDeleting(true);
                     try {
                       await deleteItemById(item.id);
+                      notifySuccess("آیتم با موفقیت حذف شد.");
                       nav("/items");
                     } catch (err) {
                       setSaveError(err?.message || "خطا در حذف آیتم.");

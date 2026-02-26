@@ -12,6 +12,7 @@ import {
   clearAuth,
   setRememberMe,
 } from "./auth";
+import { notifyError } from "./notify";
 
 const USE_DEV_PROXY = import.meta.env.DEV && import.meta.env.VITE_USE_DEV_PROXY === "true";
 const API_BASE_URL = USE_DEV_PROXY
@@ -96,6 +97,7 @@ async function refreshAccessToken() {
     const error = new Error(data.detail || "Token refresh failed");
     error.status = response.status;
     error.code = data.code;
+    notifyError(error.message);
     throw error;
   }
 
@@ -220,13 +222,22 @@ async function fetchAPI(endpoint, options = {}, skipAuth = false, isRetry = fals
       error.status = response.status;
       error.code = data.code;
       error.data = data;
+      notifyError(error.message);
       throw error;
     }
 
     return data;
   } catch (error) {
-    if (error instanceof TypeError && error.message === "Failed to fetch") {
-      throw new Error("خطا در برقراری ارتباط با سرور. لطفاً اتصال اینترنت خود را بررسی کنید.");
+    const message = String(error?.message || "");
+    const isNetworkError =
+      error instanceof TypeError ||
+      /Failed to fetch|NetworkError|Load failed|fetch failed/i.test(message);
+    if (isNetworkError) {
+      const networkError = new Error(
+        "خطا در برقراری ارتباط با سرور. لطفاً اتصال اینترنت خود را بررسی کنید."
+      );
+      notifyError(networkError.message);
+      throw networkError;
     }
     throw error;
   }
@@ -433,6 +444,7 @@ export async function updateUserProfile(payload) {
     );
     error.status = response.status;
     error.data = data;
+    notifyError(error.message);
     throw error;
   }
 
@@ -490,6 +502,7 @@ export async function getProducts({ page = 0, size = 50 } = {}) {
         );
         error.status = response.status;
         error.data = data;
+        notifyError(error.message);
         throw error;
       }
 
@@ -537,6 +550,7 @@ export async function getItemCounts() {
     );
     error.status = response.status;
     error.data = data;
+    notifyError(error.message);
     throw error;
   }
 
@@ -575,6 +589,7 @@ export async function getItemCountsMe() {
     );
     error.status = response.status;
     error.data = data;
+    notifyError(error.message);
     throw error;
   }
 
@@ -617,6 +632,7 @@ export async function getItemCountsByUserId(userId) {
     );
     error.status = response.status;
     error.data = data;
+    notifyError(error.message);
     throw error;
   }
 
@@ -655,6 +671,7 @@ export async function getCategories() {
     );
     error.status = response.status;
     error.data = data;
+    notifyError(error.message);
     throw error;
   }
 
@@ -691,6 +708,7 @@ export async function getItemById(id) {
     );
     error.status = response.status;
     error.data = data;
+    notifyError(error.message);
     throw error;
   }
 
@@ -730,6 +748,7 @@ export async function reportItemById(id) {
     );
     error.status = response.status;
     error.data = data;
+    notifyError(error.message);
     throw error;
   }
 
@@ -773,6 +792,7 @@ export async function createItem(payload) {
     );
     error.status = response.status;
     error.data = data;
+    notifyError(error.message);
     throw error;
   }
 
@@ -821,6 +841,7 @@ export async function patchItemById(id, payload) {
     );
     error.status = response.status;
     error.data = data;
+    notifyError(error.message);
     throw error;
   }
 
@@ -864,6 +885,7 @@ export async function deleteItemById(id) {
     );
     error.status = response.status;
     error.data = data;
+    notifyError(error.message);
     throw error;
   }
 

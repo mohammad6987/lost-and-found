@@ -18,9 +18,22 @@ import Terms from './pages/Terms/Terms'
 import VerifyEmail from './pages/VerifyEmail/VerifyEmail'
 import Profile from './pages/Profile/Profile'
 import PublicProfile from './pages/Profile/PublicProfile'
+import { ToastContainer } from "react-toastify";
 function App() {
   return (
     <HashRouter>
+      <ToastContainer
+        position="bottom-left"
+        autoClose={4000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+      />
       <Routes>
         <Route element={<AppLayout />}>
           <Route path="/" element={<Home />} />

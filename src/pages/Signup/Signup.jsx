@@ -11,6 +11,7 @@ import {
   getPasswordStrength,
   normalizeEmail,
 } from "../../utils/validation";
+import { notifySuccess } from "../../services/notify";
 import "./Signup.css";
 
 const OTP_LENGTH = 6;
@@ -171,6 +172,7 @@ export default function Signup() {
         password: formData.password,
       });
       
+      notifySuccess("کد تأیید به ایمیل شما ارسال شد.");
       setStep("verify");
       setResendCooldown(RESEND_COOLDOWN);
     } catch (error) {
@@ -204,6 +206,7 @@ export default function Signup() {
     try {
       const normalizedEmail = normalizeEmail(formData.email);
       await resendRegistrationOtp({ email: normalizedEmail });
+      notifySuccess("کد تأیید مجدداً ارسال شد.");
       setResendCooldown(RESEND_COOLDOWN);
     } catch (error) {
       if (error.status === 429) {
@@ -249,6 +252,7 @@ export default function Signup() {
         otp: otp,
       });
       
+      notifySuccess("ثبت‌نام با موفقیت انجام شد.");
       setSubmitSuccess(true);
       setTimeout(() => {
         navigate("/login");

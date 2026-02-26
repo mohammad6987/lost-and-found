@@ -9,6 +9,7 @@ import "./ItemPages.css";
 import { useAuth } from "../../context/AuthContext";
 import { createItem } from "../../services/api";
 import { fetchCategories } from "../../services/categories";
+import { notifySuccess } from "../../services/notify";
 
 const CATEGORY_OPTIONS = [{ value: "", label: "یک دسته‌بندی انتخاب کنید..." }];
 
@@ -258,6 +259,7 @@ export default function AddItemPage() {
       setImagePreview("");
       setX("");
       setY("");
+      notifySuccess("آیتم با موفقیت ثبت شد.");
     } catch (err) {
       setSubmitError(err?.message || "خطا در ثبت آیتم.");
     } finally {

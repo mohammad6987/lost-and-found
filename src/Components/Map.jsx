@@ -15,6 +15,7 @@ import L from "leaflet";
 import { fetchItemsByLocationPage, fetchProductsPage } from "../services/products";
 import { fetchCategories } from "../services/categories";
 import CachedTileLayer from "./CachedTileLayer";
+import { notifyError, notifyWarn } from "../services/notify";
 
 import "leaflet/dist/leaflet.css";
 import "../assets/Map.css";
@@ -417,9 +418,38 @@ export default function LostAndFoundMap() {
   };
 
   useEffect(() => {
-    if (!("geolocation" in navigator)){
-      window.alert( " موقعیت شما قابل دسترسی نیست!");
-      return;}
+    if (!("geolocation" in navigator)) {
+      notifyError("موقعیت شما قابل دسترسی نیست!");
+      return;
+    }
+
+    const options = { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 };
+    const fallbackToApprox = () => {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+          setUserLocation({ lat: latitude, lng: longitude });
+          const out = !isInBounds(latitude, longitude);
+          setUserOutOfBounds(out);
+          if (out && !hasShownBoundsAlert.current) {
+            hasShownBoundsAlert.current = true;
+            notifyWarn("موقعیت شما خارج از محدوده نقشه است.");
+          }
+        },
+        (err) => {
+          console.warn("Geolocation error:", err);
+          if (err?.code === 1) {
+            notifyError("دسترسی به موقعیت مکانی رد شد.");
+          } else if (err?.code === 2) {
+            notifyError("موقعیت مکانی در دسترس نیست. لطفاً GPS یا اینترنت را بررسی کنید.");
+          } else if (err?.code === 3) {
+            notifyError("دریافت موقعیت بیش از حد طول کشید. دوباره تلاش کنید.");
+          }
+        },
+        { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
+      );
+    };
+
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords;
@@ -428,13 +458,18 @@ export default function LostAndFoundMap() {
         setUserOutOfBounds(out);
         if (out && !hasShownBoundsAlert.current) {
           hasShownBoundsAlert.current = true;
-          window.alert("موقعیت شما خارج از محدوده نقشه است.");
+          notifyWarn("موقعیت شما خارج از محدوده نقشه است.");
         }
       },
       (err) => {
         console.warn("Geolocation error:", err);
+        if (err?.code === 2 || err?.code === 3) {
+          fallbackToApprox();
+        } else if (err?.code === 1) {
+          notifyError("دسترسی به موقعیت مکانی رد شد.");
+        }
       },
-      { enableHighAccuracy: true, timeout: 8000 }
+      options
     );
   }, []);
 
@@ -584,7 +619,12 @@ export default function LostAndFoundMap() {
           <CachedTileLayer url={TILE_URL} attribution={TILE_ATTR} />
 
           <MarkerClusterGroup
-            maxClusterRadius={50}
+            maxClusterRadius={(zoom) => (zoom >= 18 ? 18 : zoom >= 17 ? 28 : 40)}
+            disableClusteringAtZoom={18}
+            spiderfyOnMaxZoom
+            showCoverageOnHover={false}
+            zoomToBoundsOnClick
+            chunkedLoading
             iconCreateFunction={(cluster) => {
               return L.divIcon({
                 html: `<div class="custom-cluster">
@@ -597,78 +637,34 @@ export default function LostAndFoundMap() {
               });
             }}
           >
-            {(() => {
-              const visibleItems = items.filter((i) =>
-                selectedCategories.includes(i.category)
-              );
-              const grouped = new Map();
-              visibleItems.forEach((item) => {
-                const key = `${item.x?.toFixed(6)}|${item.y?.toFixed(6)}`;
-                if (!grouped.has(key)) grouped.set(key, []);
-                grouped.get(key).push(item);
-              });
-
-              return Array.from(grouped.entries()).map(([key, group]) => {
-                const [latStr, lngStr] = key.split("|");
-                const lat = Number(latStr);
-                const lng = Number(lngStr);
-                const markerItem = group[0];
-                return (
-                  <Marker
-                    key={key}
-                    position={[lat, lng]}
-                    icon={markerIcon(markerItem.category, group.length, categoriesMap)}
-                  >
-                    <Popup>
-                      {group.length === 1 ? (
-                        <>
-                          <strong>{markerItem.name}</strong>
-                          <br />
-                          {getCategoryLabel(markerItem, categoriesMap)}
-                          <br />
-                          {new Date(markerItem.timestamp).toLocaleString("fa-IR")}
-                          <div className="map-popup-actions">
-                            <button
-                              type="button"
-                              className="map-popup-btn"
-                              onClick={() =>
-                                navigate(`/items/${markerItem.id}`, { state: { item: markerItem } })
-                              }
-                            >
-                              مشاهده جزئیات
-                            </button>
-                          </div>
-                        </>
-                      ) : (
-                        <div className="map-popup-list">
-                          <div className="map-popup-list__title">
-                            {group.length} مورد در این موقعیت
-                          </div>
-                          <div className="map-popup-list__items">
-                            {group.map((item) => (
-                              <button
-                                key={item.id}
-                                type="button"
-                                className="map-popup-list__item"
-                                onClick={() =>
-                                  navigate(`/items/${item.id}`, { state: { item } })
-                                }
-                              >
-                                <div className="map-popup-list__name">{item.name}</div>
-                                <div className="map-popup-list__meta">
-                                  {getCategoryLabel(item, categoriesMap)} •{" "}
-                                  {new Date(item.timestamp).toLocaleString("fa-IR")}
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </Popup>
-                  </Marker>
-                );
-              });
-            })()}
+            {items
+              .filter((i) => selectedCategories.includes(i.category))
+              .map((item) => (
+                <Marker
+                  key={item.id}
+                  position={[item.x, item.y]}
+                  icon={markerIcon(item.category, 1, categoriesMap)}
+                >
+                  <Popup>
+                    <strong>{item.name}</strong>
+                    <br />
+                    {getCategoryLabel(item, categoriesMap)}
+                    <br />
+                    {new Date(item.timestamp).toLocaleString("fa-IR")}
+                    <div className="map-popup-actions">
+                      <button
+                        type="button"
+                        className="map-popup-btn"
+                        onClick={() =>
+                          navigate(`/items/${item.id}`, { state: { item } })
+                        }
+                      >
+                        مشاهده جزئیات
+                      </button>
+                    </div>
+                  </Popup>
+                </Marker>
+              ))}
           </MarkerClusterGroup>
 
           {userOutOfBounds ? (

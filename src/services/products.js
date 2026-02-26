@@ -1,4 +1,5 @@
 import { getItemById, getProducts } from "./api";
+import { notifyError } from "./notify";
 import { getAccessToken } from "./auth";
 
 const ITEMS_CACHE_KEY = "lf_items_cache_v1";
@@ -227,6 +228,7 @@ async function fetchItemsByLocationRaw({
     );
     error.status = response.status;
     error.data = data;
+    notifyError(error.message);
     throw error;
   }
   const meta = data?.data || data || {};

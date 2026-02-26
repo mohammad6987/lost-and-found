@@ -1,3 +1,5 @@
+import { notifyError } from "./notify";
+
 const METIS_BASE_URL = import.meta.env.VITE_METIS_BASE_URL || "https://api.metisai.ir";
 
 function authHeaders() {
@@ -22,6 +24,7 @@ export async function createChatSession(botId, user) {
     const error = new Error(data?.message || data?.detail || "خطا در ساخت گفتگو.");
     error.status = response.status;
     error.data = data;
+    notifyError(error.message);
     throw error;
   }
   return data;
@@ -53,6 +56,7 @@ export async function sendChatMessage(sessionId, message, messageSystemInstructi
     const error = new Error(data?.message || data?.detail || "خطا در ارسال پیام.");
     error.status = response.status;
     error.data = data;
+    notifyError(error.message);
     throw error;
   }
   return data;

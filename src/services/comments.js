@@ -1,4 +1,5 @@
 import { getAccessToken } from "./auth";
+import { notifyError } from "./notify";
 
 const COMMENTS_API_BASE_URL =
   import.meta.env.VITE_COMMENTS_API_BASE_URL ||
@@ -20,6 +21,7 @@ export async function fetchComments(itemId, { page = 0, size = 20 } = {}) {
     const error = new Error(data?.message || data?.detail || "خطا در دریافت نظرات.");
     error.status = response.status;
     error.data = data;
+    notifyError(error.message);
     throw error;
   }
   return normalizeCommentsResponse(data);
@@ -42,6 +44,7 @@ export async function createComment(itemId, { text, parentCommentId = null }) {
     const error = new Error(data?.message || data?.detail || "خطا در ثبت نظر.");
     error.status = response.status;
     error.data = data;
+    notifyError(error.message);
     throw error;
   }
   return normalizeCommentsResponse(data);
@@ -64,6 +67,7 @@ export async function reportComment(itemId, commentId, cause) {
     const error = new Error(data?.message || data?.detail || "خطا در گزارش نظر.");
     error.status = response.status;
     error.data = data;
+    notifyError(error.message);
     throw error;
   }
   return data;

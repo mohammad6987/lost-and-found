@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { login } from "../../services/api";
+import { notifySuccess } from "../../services/notify";
 import "./Login.css";
 
 // Email validation
@@ -100,7 +101,7 @@ export default function Login() {
       };
       
       await login(credentials, formData.rememberMe);
-      
+      notifySuccess("با موفقیت وارد شدید.");
       // Navigate to main page
       navigate("/home");
     } catch (error) {
