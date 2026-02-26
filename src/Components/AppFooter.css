@@ -14,6 +14,7 @@
   min-height: var(--app-footer-height);
   width: 100vw;
   margin-inline: calc(50% - 50vw);
+  font-family: "Vazirmatn", "Inter", system-ui, sans-serif;
 }
 
 .app-footer__content {
