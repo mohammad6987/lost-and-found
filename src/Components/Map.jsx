@@ -423,7 +423,7 @@ export default function LostAndFoundMap() {
       return;
     }
 
-    const options = { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 };
+    const options = { enableHighAccuracy: true, timeout: 25000, maximumAge: 15000 };
     const fallbackToApprox = () => {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
@@ -446,7 +446,7 @@ export default function LostAndFoundMap() {
             notifyError("دریافت موقعیت بیش از حد طول کشید. دوباره تلاش کنید.");
           }
         },
-        { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
+        { enableHighAccuracy: false, timeout: 25000, maximumAge: 60000 }
       );
     };
 
@@ -607,6 +607,12 @@ export default function LostAndFoundMap() {
           <div className="map-title">نقشه اشیاء گم‌شده</div>
           <div className="map-hint">برای افزودن، دوبار روی نقشه کلیک کنید</div>
         </div>
+        {loadingItems ? (
+          <div className="map-loading">
+            <div className="map-loading__spinner" />
+            <div className="map-loading__text">در حال دریافت نتایج...</div>
+          </div>
+        ) : null}
         <MapContainer
           center={center}
           zoom={16}
