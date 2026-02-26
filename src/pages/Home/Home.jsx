@@ -29,7 +29,7 @@ async function fetchRecentItems() {
 
 async function fetchStats() {
   const response = await getItemCounts();
-  const data = response?.data || {};
+  const data = response || {};
   return {
     todayItems: data.today_reported || 0,
     totalItems: data.all_reported || 0,
