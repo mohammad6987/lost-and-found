@@ -406,7 +406,7 @@
   flex-direction: column;
   gap: 6px;
   font-size: 13px;
-  color: #6b7280;
+  color: #ffffff;
 }
 
 .profile-form__field input,
@@ -466,21 +466,19 @@
 }
 
 .profile-dropdown {
-  background: #556398;
+  background: #343c58;
   border-radius: 16px;
   padding: 16px;
   margin-bottom: 16px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
   border: 1px solid #e5e7eb;
+  color: white;
+  
 }
 
-.profile-dropdown:hover {
-  background: #a5a8e4;
-  border-radius: 16px;
-  padding: 16px;
-  margin-bottom: 16px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-  border: 1px solid #e5e7eb;
+.profile-dropdown__summary:hover {
+  color: white;
+  
 }
 
 .profile-dropdown__summary {
