@@ -336,7 +336,7 @@ export default function LostAndFoundMap() {
   const [filterBusy, setFilterBusy] = useState(false);
   const [filterError, setFilterError] = useState("");
   const [page, setPage] = useState(0);
-  const [size] = useState(50);
+  const [size] = useState(20);
   const [hasNext, setHasNext] = useState(false);
   const [totalPages, setTotalPages] = useState(0);
   const hasShownBoundsAlert = useRef(false);
