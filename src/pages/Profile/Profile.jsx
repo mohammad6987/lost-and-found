@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { isAuthenticated, getUserData, clearAuth } from "../../services/auth";
-import { getUserProfile, getCurrentUser } from "../../services/api";
+import { getUserProfile, getCurrentUser, getItemCountsMe } from "../../services/api";
 import "./Profile.css";
 
 // Mock user data - TODO: Replace with actual API call
@@ -63,38 +63,50 @@ export default function Profile() {
       try {
         // Check if profile data exists in localStorage cache
         const cachedProfile = localStorage.getItem("userProfileCache");
-        
+        let baseProfile = null;
         if (cachedProfile) {
           // Use cached profile data
           const profileData = JSON.parse(cachedProfile);
+          baseProfile = profileData;
           setUserProfile(profileData);
           setIsLoading(false);
-          return;
         }
 
-        // Fetch from API if no cache
-        const profileData = await getUserProfile();
-        const currentUserData = await getCurrentUser();
-        const email = JSON.parse(sessionStorage.getItem("user_data")).email;
+        if (!baseProfile) {
+          // Fetch from API if no cache
+          const profileData = await getUserProfile();
+          const currentUserData = await getCurrentUser();
+          const storedUser = sessionStorage.getItem("user_data");
+          const storedEmail = storedUser ? JSON.parse(storedUser)?.email : "";
 
-        // Transform API data to match component needs
-        const transformedProfile = {
-          name: profileData?.user_name || currentUserData?.username || "کاربر",
-          email: email || "نامشخص",
-          phoneNumber: profileData?.phone_number || "-",
-          department: profileData?.department || "نامشخص",
-          preferredContact: profileData?.preferred_contact_method || "email",
-          socialMedia: profileData?.social_media_links || {},
-          profilePic: profileData?.profile_pic || null,
-          itemsReported: 0,
-          itemsFound: 0,
-          joinedDate: "نامشخص",
+          // Transform API data to match component needs
+          baseProfile = {
+            name: profileData?.user_name || currentUserData?.username || "کاربر",
+            email: storedEmail || currentUserData?.email || "نامشخص",
+            phoneNumber: profileData?.phone_number || "-",
+            department: profileData?.department || "نامشخص",
+            preferredContact: profileData?.preferred_contact_method || "email",
+            socialMedia: profileData?.social_media_links || {},
+            profilePic: profileData?.profile_pic || null,
+            itemsReported: 0,
+            itemsFound: 0,
+            joinedDate: "نامشخص",
+          };
+        }
+
+        const counts = await getItemCountsMe().catch(() => null);
+        const enrichedProfile = {
+          ...baseProfile,
+          itemsReported:
+            counts?.lost_reported ?? baseProfile?.itemsReported ?? 0,
+          itemsFound:
+            counts?.found_reported ?? baseProfile?.itemsFound ?? 0,
         };
 
         // Cache the profile data in localStorage
-        localStorage.setItem("userProfileCache", JSON.stringify(transformedProfile));
+        localStorage.setItem("userProfileCache", JSON.stringify(enrichedProfile));
 
-        setUserProfile(transformedProfile);
+        setUserProfile(enrichedProfile);
 
         // Simulate loading state completion
         await new Promise((resolve) => setTimeout(resolve, 300));
@@ -141,6 +153,7 @@ export default function Profile() {
       // Fetch fresh data from API
       const profileData = await getUserProfile();
       const currentUserData = await getCurrentUser();
+      const counts = await getItemCountsMe().catch(() => null);
 
       // Transform API data to match component needs
       const transformedProfile = {
@@ -151,8 +164,8 @@ export default function Profile() {
         preferredContact: profileData?.preferred_contact_method || "email",
         socialMedia: profileData?.social_media_links || {},
         profilePic: profileData?.profile_pic || null,
-        itemsReported: 0,
-        itemsFound: 0,
+        itemsReported: counts?.lost_reported ?? 0,
+        itemsFound: counts?.found_reported ?? 0,
         joinedDate: "نامشخص",
       };
 

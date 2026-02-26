@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { getUserProfileById } from "../../services/api";
+import { getItemCountsByUserId, getUserProfileById } from "../../services/api";
 import "./PublicProfile.css";
 
 export default function PublicProfile() {
   const { id } = useParams();
   const [profile, setProfile] = useState(null);
+  const [counts, setCounts] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -20,7 +21,7 @@ export default function PublicProfile() {
         const data = await getUserProfileById(id);
         if (!mounted) return;
 
-        setProfile({
+        const nextProfile = {
           id: data.user_id,
           name: data.user_name,
           department: data.department,
@@ -28,7 +29,11 @@ export default function PublicProfile() {
           avatar: data.profile_pic,
           contact: data.preferred_contact_method,
           isPublic: data.is_public,
-        });
+        };
+        setProfile(nextProfile);
+        const nextCounts = await getItemCountsByUserId(nextProfile.id).catch(() => null);
+        if (!mounted) return;
+        if (nextCounts) setCounts(nextCounts);
       } catch (err) {
         if (!mounted) return;
         setError(err?.message || "خطا در دریافت پروفایل.");
@@ -119,6 +124,20 @@ export default function PublicProfile() {
             <div className="stat-label">روش ارتباط ترجیحی</div>
             <div className="stat-value">
               {profile?.contact || "نامشخص"}
+            </div>
+          </div>
+
+          <div className="stat-item">
+            <div className="stat-label">گمشده ثبت‌شده</div>
+            <div className="stat-value">
+              {counts?.lost_reported ?? 0}
+            </div>
+          </div>
+
+          <div className="stat-item">
+            <div className="stat-label">پیداشده ثبت‌شده</div>
+            <div className="stat-value">
+              {counts?.found_reported ?? 0}
             </div>
           </div>
         </div>

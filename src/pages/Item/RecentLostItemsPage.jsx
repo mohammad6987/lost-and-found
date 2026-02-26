@@ -12,6 +12,67 @@ import "./ItemPages.css";
 const CATEGORY_FALLBACK = {
   other: "سایر",
 };
+const RESULTS_CACHE_KEY = "lf_recent_items_cache_v1";
+const RESULTS_TTL_MS = 5 * 60 * 1000;
+
+function loadResultsCache() {
+  try {
+    const raw = sessionStorage.getItem(RESULTS_CACHE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveResultsCache(cache) {
+  try {
+    sessionStorage.setItem(RESULTS_CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    // ignore cache errors
+  }
+}
+
+function clearResultsCache() {
+  try {
+    sessionStorage.removeItem(RESULTS_CACHE_KEY);
+  } catch {
+    // ignore cache errors
+  }
+}
+
+function readResultsCacheEntry(key) {
+  const cache = loadResultsCache();
+  const entry = cache[key];
+  if (!entry || !entry.ts) return null;
+  if (Date.now() - entry.ts > RESULTS_TTL_MS) {
+    delete cache[key];
+    saveResultsCache(cache);
+    return null;
+  }
+  return entry;
+}
+
+function writeResultsCacheEntry(key, value) {
+  const cache = loadResultsCache();
+  cache[key] = { ...value, ts: Date.now() };
+  saveResultsCache(cache);
+}
+
+function buildCacheKey({ mode, page, size, name, type, categoryIds, from, to }) {
+  const normalized = {
+    mode,
+    page,
+    size,
+    name: name || "",
+    type: type || "",
+    categoryIds: Array.isArray(categoryIds) ? [...categoryIds].sort((a, b) => a - b) : [],
+    from: from || "",
+    to: to || "",
+  };
+  return JSON.stringify(normalized);
+}
 
 function EditIcon({ onClick }) {
   return (
@@ -114,6 +175,26 @@ export default function RecentLostItemsPage() {
         if (filterApplied) {
           const fromDate = presetToDate(filterFromPreset, true);
           const toDate = presetToDate(filterToPreset, false);
+          const cacheKey = buildCacheKey({
+            mode: "filtered",
+            page,
+            size,
+            name: filterName.trim() || "",
+            type: filterType || "",
+            categoryIds: selectedCategoryIds,
+            from: fromDate ? fromDate.toISOString() : "",
+            to: toDate ? toDate.toISOString() : "",
+          });
+          const cached = readResultsCacheEntry(cacheKey);
+          if (cached) {
+            if (!cancelled) {
+              setItems(cached.items || []);
+              setHasNext(Boolean(cached.meta?.hasNext));
+              setTotalPages(cached.meta?.totalPages || 0);
+              setLoadingItems(false);
+            }
+            return;
+          }
           const response = await fetchItemsByLocationPage({
             name: filterName.trim() || undefined,
             type: filterType || undefined,
@@ -127,12 +208,25 @@ export default function RecentLostItemsPage() {
           setItems(response.items || []);
           setHasNext(Boolean(response.meta?.hasNext));
           setTotalPages(response.meta?.totalPages || 0);
+          writeResultsCacheEntry(cacheKey, { items: response.items || [], meta: response.meta || null });
         } else {
+          const cacheKey = buildCacheKey({ mode: "all", page, size });
+          const cached = readResultsCacheEntry(cacheKey);
+          if (cached) {
+            if (!cancelled) {
+              setItems(cached.items || []);
+              setHasNext(Boolean(cached.meta?.hasNext));
+              setTotalPages(cached.meta?.totalPages || 0);
+              setLoadingItems(false);
+            }
+            return;
+          }
           const { items: nextItems, meta } = await fetchProductsPage({ page, size, useCache: false });
           if (cancelled) return;
           setItems(nextItems);
           setHasNext(Boolean(meta?.hasNext));
           setTotalPages(meta?.totalPages || 0);
+          writeResultsCacheEntry(cacheKey, { items: nextItems || [], meta: meta || null });
         }
       } catch (err) {
         if (cancelled) return;
@@ -353,6 +447,7 @@ export default function RecentLostItemsPage() {
                         type="button"
                         className="btn btn-outline-secondary"
                         onClick={() => {
+                          clearResultsCache();
                           setFilterApplying(true);
                           setFilterName(filterNameDraft);
                           setFilterType(filterTypeDraft);
@@ -369,6 +464,7 @@ export default function RecentLostItemsPage() {
                         type="button"
                         className="btn btn-outline-secondary"
                         onClick={() => {
+                          clearResultsCache();
                           setFilterNameDraft("");
                           setFilterTypeDraft("");
                           setFilterFromPresetDraft("any");

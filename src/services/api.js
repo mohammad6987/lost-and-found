@@ -484,6 +484,86 @@ export async function getItemCounts() {
     throw error;
   }
 
+  return data?.data ?? data;
+}
+
+/**
+ * Get current user's items counts
+ * Backend endpoint: GET /api/items/counts/me
+ */
+export async function getItemCountsMe() {
+  const accessToken = getAccessToken();
+  const headers = {
+    accept: "*/*",
+  };
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+
+  const endpoint = `/api/items/counts/me`;
+  const response = await fetch(`${PRODUCTS_API_BASE_URL}${endpoint}`, {
+    method: "GET",
+    headers,
+  });
+
+  let data;
+  try {
+    data = await response.json();
+  } catch {
+    data = {};
+  }
+
+  if (!response.ok) {
+    const error = new Error(
+      data.error || data.detail || data.message || getErrorMessage(response.status)
+    );
+    error.status = response.status;
+    error.data = data;
+    throw error;
+  }
+
+  return data?.data ?? data;
+}
+
+/**
+ * Get user's items counts by id (public profile)
+ * Backend endpoint: GET /api/items/counts/{userId}
+ * @param {string|number} userId
+ */
+export async function getItemCountsByUserId(userId) {
+  if (userId === undefined || userId === null || userId === "") {
+    throw new Error("userId is required");
+  }
+  const accessToken = getAccessToken();
+  const headers = {
+    accept: "*/*",
+  };
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+
+  const endpoint = `/api/items/counts/${encodeURIComponent(userId)}`;
+  const response = await fetch(`${PRODUCTS_API_BASE_URL}${endpoint}`, {
+    method: "GET",
+    headers,
+  });
+
+  let data;
+  try {
+    data = await response.json();
+  } catch {
+    data = {};
+  }
+
+  if (!response.ok) {
+    const error = new Error(
+      data.error || data.detail || data.message || getErrorMessage(response.status)
+    );
+    error.status = response.status;
+    error.data = data;
+    throw error;
+  }
+
   return data;
 }
 
