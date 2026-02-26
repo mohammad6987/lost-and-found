@@ -363,6 +363,7 @@
   border-radius: 18px;
   display: flex;
   flex-direction: column;
+  background: #ffffff;
 }
 
 .item-modal .card-body {
